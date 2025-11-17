@@ -4,7 +4,7 @@ from services import logic
 
 def show_search_console():
 
-  st.set_page_config(page_title="Job Search App", layout="wide")
+  st.set_page_config(page_title="Scout Automation", layout="wide")
 
   st.title('Scout Automation')
 
