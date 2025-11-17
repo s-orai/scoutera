@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+
+
+# Virtual environment
+.venv/
+.env
+.streamlit/
+
+*.csv
+*.json
+*.yml
