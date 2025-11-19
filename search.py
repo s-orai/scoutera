@@ -10,12 +10,14 @@ def show_search_console():
 
   pdfs = st.file_uploader('候補者PDFアップロード', type=['pdf'], accept_multiple_files=True)
 
-  condition1 = st.text_area('一つでも合致しない場合「NG判定」となる条件', placeholder='一つでも合致しない場合「NG判定」となる条件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+  condition1 = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
 
 
-  condition2 = st.text_area('一つでも当てはまる場合「NG判定」となる条件', placeholder='一つでも当てはまる場合「NG判定」となる検索条件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+  condition2 = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+
+  condition3 = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
 
   if st.button('開始'):
     with st.spinner('処理中です.....'):
-      spreadsheet_url = logic.main(condition1, condition2, pdfs)
+      spreadsheet_url = logic.main(condition1, condition2, condition3, pdfs)
       st.write(f"作成したシート：{spreadsheet_url}")

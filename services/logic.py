@@ -18,14 +18,9 @@ def export_to_spredsheet(df):
 
 
 
-def main(condition1, condition2, pdfs):
-  json = ai_matching.create_list(pdfs, condition1, condition2)
+def main(condition1, condition2, condition3, pdfs):
+  json = ai_matching.create_list(pdfs, condition1, condition2, condition3)
   df = pd.DataFrame(json['result'])
-  # df = df.rename(columns={
-  #   "judge": "判定",
-  #   "reason": "判定理由",
-  #   "message": "スカウト文"
-  # })
 
   return export_to_spredsheet(df)
 

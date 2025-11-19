@@ -1,5 +1,6 @@
 from openai import OpenAI
 import streamlit as st
+import re
 
 api_key = st.secrets["open_ai"]["api_key"]
 client = OpenAI(api_key=api_key)
@@ -26,6 +27,7 @@ def format_pdf(files):
         file=file,    # ← そのまま渡せる
         purpose="user_data"
     )
+    filename = re.match(r"^(.*?)(?:\.pdf)$", pdf.filename).group(1)
     inputs.append(
       {
         "role": "user",
@@ -36,7 +38,7 @@ def format_pdf(files):
             },
             {
                 "type": "input_text",
-                "text": f"これは{pdf.filename}の書類です。内容を読み込んでください。"
+                "text": f"これは{filename}の書類です。内容を読み込んでください。filename: {filename}"
             }
         ]
       }

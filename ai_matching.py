@@ -1,7 +1,7 @@
 import json
 from clients import openai_client
 
-def format_text(condition1, condition2):
+def format_text(condition1, condition2, condition3):
   return f"""
             あなたは採用スカウト担当として、複数のPDF（候補者書類）に対して個別に評価を行います。
             【PDFの扱いについて】
@@ -13,22 +13,21 @@ def format_text(condition1, condition2):
 
             【STEP 1：候補者ごとの送付可否判定】
             各PDF（候補者）について以下の形式で判定してください。
-            - 判定: "OK" or "NG"
+            - 判定: "A" or "B" or "C"
             - 理由: 判定の理由（200文字以内）
-            ・複数の候補者PDFを添付します。それぞれの候補者について送付OK/NGの判定をしてください。
+            ・複数の候補者PDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
             判定条件は次の通りです。
-              ▼ 以下の条件のうち **1つでも満たさない場合は NG判定**
               {condition1}
 
-              ▼ 以下の条件のうち **1つでも当てはまる場合は NG判定**
+            <必須要件>
               {condition2}
 
+            <歓迎要件>
+              {condition3}
+
             【STEP 2：スカウト文面】
-            STEP1で「OK」だった候補者のみ、
             添付した候補者PDFの情報を参照し、
             180字以内で「お声がけした背景」を作成してください。
-
-            NGの場合は スカウト文面="" としてください。
 
             【出力形式（必ずこの通りの純粋なJSONで出力）】
 
@@ -36,9 +35,9 @@ def format_text(condition1, condition2):
               "result": [
                 {{
                   "id": "<PDFのファイル名>",
-                  "判定": "OK または NG",
+                  "判定": "A または B または C",
                   "理由": "理由",
-                  "スカウト文面": "スカウト文面（OKの場合）"
+                  "スカウト文面": "スカウト文面"
                 }}
               ]
             }}
@@ -48,8 +47,8 @@ def format_text(condition1, condition2):
             """
 
 
-def create_list(pdfs, condition1, condition2):
-  prompt = format_text(condition1, condition2)
+def create_list(pdfs, condition1, condition2, condition3):
+  prompt = format_text(condition1, condition2, condition3)
 
   res_json = openai_client.call_api(prompt, pdfs)
   res = res_json.output[0].content[0].text
