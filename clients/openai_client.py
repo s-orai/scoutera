@@ -4,7 +4,7 @@ import re
 
 api_key = st.secrets["open_ai"]["api_key"]
 client = OpenAI(api_key=api_key)
-model = "gpt-4.1-mini"
+model = "gpt-4.1"
 
 
 def call_api(prompt, pdfs):
