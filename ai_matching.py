@@ -1,21 +1,24 @@
 import json
-from clients import openai_client
+from clients import openai_client, gemini_client
 
 def format_text(condition1, condition2, condition3):
   return f"""
-            あなたは採用スカウト担当として、複数のPDF（候補者書類）に対して個別に評価を行います。
+            あなたは採用スカウト担当として、複数の候補者に対して個別に評価を行います。
             【PDFの扱いについて】
-            ・あなたには複数のメッセージで PDF が渡されます。
-            ・それぞれの PDF は1ファイル＝1候補者です。
-            ・各 PDF のメッセージ内に “filename: XXXXX.pdf” を記載しています。
-              → このファイル名を「id」として扱ってください。
+            ・添付するPDFには複数の候補者の職歴が載っています。
+            ・PDFに記載されている候補者情報を全員分読み取ってください。
+
+            【IDの取り扱いについて】
+            ・ファイル名が数字の場合はその数字を「id」として扱ってください。
+            ・1つのPDFに複数の候補者情報が記載されている場合、各候補者の最初の情報として「BU」から始まる9文字のIDが記載されています。
+              → この9文字のIDを「id」として扱ってください。
 
 
             【STEP 1：候補者ごとの送付可否判定】
-            各PDF（候補者）について以下の形式で判定してください。
+            各候補者について以下の形式で判定してください。
             - 判定: "A" or "B" or "C"
             - 理由: 判定の理由（200文字以内）
-            ・複数の候補者PDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
+            ・複数の候補者情報が記載されたPDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
             判定条件は次の通りです。
               {condition1}
 
@@ -51,8 +54,7 @@ def create_list(pdfs, condition1, condition2, condition3):
   prompt = format_text(condition1, condition2, condition3)
 
   res_json = openai_client.call_api(prompt, pdfs)
-  res = res_json.output[0].content[0].text
-  print(res_json)
+  res = res_json.output[1].content[0].text
   try:
       # 余分な文字列を削除
       cleaned_res = res.replace('```json', '').replace('```', '').strip()
@@ -61,4 +63,17 @@ def create_list(pdfs, condition1, condition2, condition3):
   except json.JSONDecodeError as e:
       print(f"JSON Parse Error: {str(e)}")
       print("Invalid JSON content:", res)
+      raise
+
+
+def create_list_by_gemini(pdfs, condition1, condition2, condition3):
+  prompt = format_text(condition1, condition2, condition3)
+  res_json = gemini_client.call_api(pdfs, prompt)
+  print(res_json.text)
+  try:
+      parsed_json = json.loads(res_json.text)
+      return parsed_json
+  except json.JSONDecodeError as e:
+      print(f"JSON Parse Error: {str(e)}")
+      print("Invalid JSON content:", res_json)
       raise

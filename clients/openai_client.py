@@ -4,7 +4,12 @@ import re
 
 api_key = st.secrets["open_ai"]["api_key"]
 client = OpenAI(api_key=api_key)
-model = "gpt-4.1"
+model = "gpt-5-mini-2025-08-07"
+
+gemini_api_key = st.secrets["gemini"]["api_key"]
+gemini_client = OpenAI(api_key=gemini_api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+gemini_model = "gemini-2.5-flash"
+
 
 
 def call_api(prompt, pdfs):
@@ -17,7 +22,19 @@ def call_api(prompt, pdfs):
         model=model,
         input=input,
         store=True,
-        temperature=0
+  )
+
+
+def call_gemini_api(prompt, pdfs):
+  if not prompt:
+    raise RuntimeError(f"プロンプトが入力されていません。")
+  elif not pdfs:
+    raise RuntimeError(f"pdfが空です")
+  input = create_input(prompt, pdfs)
+  return gemini_client.responses.create(
+        model=model,
+        input=input,
+        store=True,
   )
 
 def format_pdf(files):
@@ -36,16 +53,13 @@ def format_pdf(files):
                 "type": "input_file",
                 "file_id": pdf.id
             },
-            {
-                "type": "input_text",
-                "text": f"これは{filename}の書類です。内容を読み込んでください。filename: {filename}"
-            }
+            # {
+            #     "type": "input_text",
+            #     "text": f"これは{filename}の書類です。内容を読み込んでください。filename: {filename}"
+            # }
         ]
       }
     )
-
-  print("pdfのリスト")
-  print(inputs)
 
   return inputs
 
@@ -57,7 +71,5 @@ def create_input(prompt, pdfs):
       "content": [{"type": "input_text", "text": prompt}]
     }
   )
-  print("最終系")
-  print(inputs)
   return inputs
 

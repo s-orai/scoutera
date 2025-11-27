@@ -1,4 +1,3 @@
-import streamlit as st
 import ai_matching
 import pandas as pd
 from clients import google_client
@@ -27,3 +26,9 @@ def main(condition1, condition2, condition3, pdfs):
 
 
 
+
+def main_by_gemini(condition1, condition2, condition3, pdfs):
+  json = ai_matching.create_list_by_gemini(pdfs, condition1, condition2, condition3)
+  df = pd.DataFrame(json['result'])
+
+  return export_to_spredsheet(df)
