@@ -27,8 +27,8 @@ def main(condition1, condition2, condition3, pdfs):
 
 
 
-def main_by_gemini(condition1, condition2, condition3, pdfs):
-  json = ai_matching.create_list_by_gemini(pdfs, condition1, condition2, condition3)
+def main_by_gemini(condition1, condition2, condition3, pdfs, job_pdf, temperature):
+  json = ai_matching.create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, temperature)
   df = pd.DataFrame(json['result'])
 
   return export_to_spredsheet(df)

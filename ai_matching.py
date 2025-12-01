@@ -1,9 +1,9 @@
 import json
 from clients import openai_client, gemini_client
 
-def format_text(condition1, condition2, condition3):
+def format_text(condition1, condition2, condition3, job_title):
   return f"""
-            あなたは採用スカウト担当として、複数の候補者に対して個別に評価を行います。
+            あなたは優秀なリクルーターです。企業のリクルーターとして、添付した募集求人(ファイル名：{job_title})に対しての候補者にダイレクトスカウトを送信します。
             【PDFの扱いについて】
             ・添付するPDFには複数の候補者の職歴が載っています。
             ・PDFに記載されている候補者情報を全員分読み取ってください。
@@ -13,6 +13,7 @@ def format_text(condition1, condition2, condition3):
             ・1つのPDFに複数の候補者情報が記載されている場合、各候補者の最初の情報として「BU」から始まる9文字のIDが記載されています。
               → この9文字のIDを「id」として扱ってください。
 
+            スカウト業務を以下のSTEP1、STEP2の流れで対応してください。
 
             【STEP 1：候補者ごとの送付可否判定】
             各候補者について以下の形式で判定してください。
@@ -77,9 +78,15 @@ def create_list(pdfs, condition1, condition2, condition3):
       raise
 
 
-def create_list_by_gemini(pdfs, condition1, condition2, condition3):
-  prompt = format_text(condition1, condition2, condition3)
-  res_json = gemini_client.call_api(pdfs, prompt)
+def create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, temperature):
+  job_title = ""
+  print(job_pdf)
+  for _, original_name in job_pdf:
+    job_title = original_name
+
+  prompt = format_text(condition1, condition2, condition3, job_title)
+  print(prompt)
+  res_json = gemini_client.call_api(pdfs, job_pdf, prompt, temperature)
   print(res_json.text)
   try:
       parsed_json = json.loads(res_json.text)
