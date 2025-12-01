@@ -5,7 +5,7 @@ import streamlit as st
 
 
 api_key = st.secrets["gemini"]["api_key"]
-model = "gemini-2.5-flash"
+model = "gemini-3-pro-preview"
 client = genai.Client(api_key=api_key)
 
 # def __init__(self) -> None:
