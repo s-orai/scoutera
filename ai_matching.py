@@ -1,5 +1,6 @@
 import json
 from clients import openai_client, gemini_client
+from collections import defaultdict, Counter
 
 def format_text(condition1, condition2, condition3, job_title):
   return f"""
@@ -17,8 +18,11 @@ def format_text(condition1, condition2, condition3, job_title):
 
             【STEP 1：候補者ごとの送付可否判定】
             各候補者について以下の形式で判定してください。
-            - 判定: "A" or "B" or "C"
-            - 理由: 判定の理由（200文字以内）
+            - STEP1における必須要件を満たすか(required_condition): "A" or "B" or "C"
+            - STEP1における歓迎要件を満たすか(welcome_condition): "A" or "B" or "C"
+            - STEP1の結果(候補者の評価結果)(evaluation_result): "A" or "B" or "C"
+            - 必須要件、歓迎要件の結果を踏まえた候補者の評価理由(evaluation_reason): 判定の理由（200文字以内）
+
             ・複数の候補者情報が記載されたPDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
             判定条件は次の通りです。
               {condition1}
@@ -46,13 +50,12 @@ def format_text(condition1, condition2, condition3, job_title):
             {{
               "result": [
                 {{
-                  "ID": "<PDFのファイル名>",
-                  "STEP1における必須要件を満たすか"：true or false,
-                  "STEP1における歓迎要件を満たすか"：true or false,
-                  "必須要件、歓迎要件の結果を踏まえた候補者の評価理由"："理由",
-                  "判定": "A または B または C",
-                  "STEP1の結果(候補者の評価結果)"：A or B or C,
-                  "STEP2の結果(声がけした背景の文章)"："文面"
+                  "id": "<PDFのファイル名>",
+                  "required_condition"：true or false,
+                  "welcome_condition"：true or false,
+                  "evaluation_reason"："理由",
+                  "evaluation_result"：A or B or C,
+                  "scout_message"："文面",
                 }}
               ]
             }}
@@ -85,13 +88,58 @@ def create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, tem
     job_title = original_name
 
   prompt = format_text(condition1, condition2, condition3, job_title)
-  print(prompt)
-  res_json = gemini_client.call_api(pdfs, job_pdf, prompt, temperature)
-  print(res_json.text)
-  try:
-      parsed_json = json.loads(res_json.text)
-      return parsed_json
-  except json.JSONDecodeError as e:
-      print(f"JSON Parse Error: {str(e)}")
-      print("Invalid JSON content:", res_json)
-      raise
+  results = gemini_client.call_api(pdfs, job_pdf, prompt, temperature)
+
+  finally_results = get_majority_decision(results)
+  return finally_results
+
+
+def get_majority_decision(ai_results):
+  # AIからの結果をIDごとのリストに変更する
+  # IDをキー、evaluation_resultのリストを値とする辞書
+  results_by_id = defaultdict(list)
+
+  # すべての問い合わせリストをループ
+  for inquiry_list in ai_results:
+      # リスト内の各辞書（レコード）をループ
+      for record in inquiry_list:
+          record_id = record.id
+
+          # IDをキーとして、結果をリストに追加
+          # 一旦レコードまるまるリストに追加する
+          results_by_id[record_id].append(record)
+
+  print("--- IDごとの全判定結果 ---") 
+  print(results_by_id)
+
+  final_majority_results = []
+  for id, result_lists in results_by_id.items():
+    evaluations = []
+    for result in result_lists:
+      evaluation_result = result.evaluation_result
+      evaluations.append(evaluation_result)
+    
+    result_count = Counter(evaluations)
+
+    # 2. most_common(1)で最多の結果を取得
+    # 例: [('A', 2)] のような形式で返る
+    most_frequent = result_count.most_common(1)
+    
+    # 3. 結果の抽出
+    if most_frequent:
+        majority_result = most_frequent[0][0]
+    else:
+        # データがない場合 (通常は起こらない)
+        majority_result = "N/A"
+
+    for result in result_lists:
+      evaluation_result = result.evaluation_result
+      if evaluation_result == majority_result:
+        # 最終結果を保存
+        # 最終判定と同じ結果を出している最初のdictの内容を最終結果として出力
+        final_majority_results.append(result)
+        break
+
+    print(f"ID: **{id}** の多数決結果: **{majority_result}**")
+
+  return final_majority_results

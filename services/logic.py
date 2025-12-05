@@ -29,6 +29,15 @@ def main(condition1, condition2, condition3, pdfs):
 
 def main_by_gemini(condition1, condition2, condition3, pdfs, job_pdf, temperature):
   json = ai_matching.create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, temperature)
-  df = pd.DataFrame(json['result'])
+  data_dicts = [item.model_dump() for item in json]
+  df = pd.DataFrame(data_dicts)
+  df.columns = [
+    "ID",
+    "STEP1における必須要件を満たすか",
+    "STEP1における歓迎要件を満たすか",
+    "必須要件、歓迎要件の結果を踏まえた候補者の評価理由",
+    "STEP1の結果(候補者の評価結果)",
+    "STEP2の結果(声がけした背景の文章)"
+  ]
 
   return export_to_spredsheet(df)
