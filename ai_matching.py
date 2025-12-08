@@ -2,7 +2,7 @@ import json
 from clients import openai_client, gemini_client
 from collections import defaultdict, Counter
 
-def format_text(condition1, condition2, condition3, job_title):
+def format_text(judge_condition, required_condition, welcome_condition, job_title):
   return f"""
             あなたは優秀なリクルーターです。企業のリクルーターとして、添付した募集求人(ファイル名：{job_title})に対しての候補者にダイレクトスカウトを送信します。
             【PDFの扱いについて】
@@ -25,13 +25,13 @@ def format_text(condition1, condition2, condition3, job_title):
 
             ・複数の候補者情報が記載されたPDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
             判定条件は次の通りです。
-              {condition1}
+              {judge_condition}
 
             <必須要件>
-              {condition2}
+              {required_condition}
 
             <歓迎要件>
-              {condition3}
+              {welcome_condition}
 
             【STEP 2：以下の条件、および例を参考に、添付ファイルの候補者全員分、声をかけた背景を伝える文章を作成してください。（STEP1の結果、C評価の候補者についても作成すること）】
             ## 文章作成時の条件
@@ -65,8 +65,8 @@ def format_text(condition1, condition2, condition3, job_title):
             """
 
 
-def create_list(pdfs, condition1, condition2, condition3):
-  prompt = format_text(condition1, condition2, condition3)
+def create_list(pdfs, judge_condition, required_condition, welcome_condition):
+  prompt = format_text(judge_condition, required_condition, welcome_condition)
 
   res_json = openai_client.call_api(prompt, pdfs)
   res = res_json.output[1].content[0].text
@@ -81,13 +81,12 @@ def create_list(pdfs, condition1, condition2, condition3):
       raise
 
 
-def create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, temperature):
+def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature):
   job_title = ""
-  print(job_pdf)
   for _, original_name in job_pdf:
     job_title = original_name
 
-  prompt = format_text(condition1, condition2, condition3, job_title)
+  prompt = format_text(judge_condition, required_condition, welcome_condition, job_title)
   results = gemini_client.call_api(pdfs, job_pdf, prompt, temperature)
 
   finally_results = get_majority_decision(results)

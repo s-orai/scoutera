@@ -13,14 +13,14 @@ def show_search_console():
 
   job_pdf = st.file_uploader('求人票アップロード', type=['pdf'], accept_multiple_files=False)
 
-  condition1 = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+  judge_condition = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
 
 
-  condition2 = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+  required_condition = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
 
-  condition3 = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+  welcome_condition = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
 
-  temperature = st.number_input('temperature', min_value = 0.0, max_value = 2.00, value = 0.5, step = 0.1, width=300)
+  temperature = st.number_input('temperature', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1, width=300)
 
 
   if st.button('開始'):
@@ -38,7 +38,7 @@ def show_search_console():
 
       try:
         # 3. 解析関数の実行
-        spreadsheet_url = logic.main_by_gemini(condition1, condition2, condition3, temp_file_info, temp_job_file_info, temperature)
+        spreadsheet_url = logic.main_by_gemini(judge_condition, required_condition, welcome_condition, temp_file_info, temp_job_file_info, temperature)
         st.write(f"作成したシート：{spreadsheet_url}")
       finally:
         # 4. ローカルの一時ファイルを削除
@@ -48,7 +48,3 @@ def show_search_console():
         for tmp_job_pdf_path, _ in temp_job_file_info:
           os.remove(tmp_job_pdf_path)
 
-  # if st.button('OpenAIで開始'):
-  #   with st.spinner('処理中です.....'):
-  #     spreadsheet_url = logic.main(condition1, condition2, condition3, pdfs)
-  #     st.write(f"作成したシート：{spreadsheet_url}")

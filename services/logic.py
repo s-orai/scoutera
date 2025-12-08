@@ -27,8 +27,8 @@ def main(condition1, condition2, condition3, pdfs):
 
 
 
-def main_by_gemini(condition1, condition2, condition3, pdfs, job_pdf, temperature):
-  json = ai_matching.create_list_by_gemini(pdfs, condition1, condition2, condition3, job_pdf, temperature)
+def main_by_gemini(judge_condition, required_condition, welcome_condition, pdfs, job_pdf, temperature):
+  json = ai_matching.create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature)
   data_dicts = [item.model_dump() for item in json]
   df = pd.DataFrame(data_dicts)
   df.columns = [
