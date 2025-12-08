@@ -2,7 +2,7 @@ import json
 from clients import openai_client, gemini_client
 from collections import defaultdict, Counter
 
-def format_text(judge_condition, required_condition, welcome_condition, job_title):
+def format_prompt(judge_condition, required_condition, welcome_condition, job_title):
   return f"""
             あなたは優秀なリクルーターです。企業のリクルーターとして、添付した募集求人(ファイル名：{job_title})に対しての候補者にダイレクトスカウトを送信します。
             【PDFの扱いについて】
@@ -65,29 +65,14 @@ def format_text(judge_condition, required_condition, welcome_condition, job_titl
             """
 
 
-def create_list(pdfs, judge_condition, required_condition, welcome_condition):
-  prompt = format_text(judge_condition, required_condition, welcome_condition)
-
-  res_json = openai_client.call_api(prompt, pdfs)
-  res = res_json.output[1].content[0].text
-  try:
-      # 余分な文字列を削除
-      cleaned_res = res.replace('```json', '').replace('```', '').strip()
-      parsed_json = json.loads(cleaned_res)
-      return parsed_json
-  except json.JSONDecodeError as e:
-      print(f"JSON Parse Error: {str(e)}")
-      print("Invalid JSON content:", res)
-      raise
-
-
 def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature):
   job_title = ""
   for _, original_name in job_pdf:
     job_title = original_name
 
-  prompt = format_text(judge_condition, required_condition, welcome_condition, job_title)
-  results = gemini_client.call_api(pdfs, job_pdf, prompt, temperature)
+  prompt = format_prompt(judge_condition, required_condition, welcome_condition, job_title)
+  pdfs.extend(job_pdf)
+  results = gemini_client.request_with_files(prompt, pdfs, temperature)
 
   finally_results = get_majority_decision(results)
   return finally_results
