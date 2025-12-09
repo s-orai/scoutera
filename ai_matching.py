@@ -71,8 +71,7 @@ def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_con
     job_title = original_name
 
   prompt = format_prompt(judge_condition, required_condition, welcome_condition, job_title)
-  pdfs.extend(job_pdf)
-  results = gemini_client.request_with_files(prompt, pdfs, temperature)
+  results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf, temperature)
 
   finally_results = get_majority_decision(results)
   return finally_results
@@ -86,15 +85,11 @@ def get_majority_decision(ai_results):
   # すべての問い合わせリストをループ
   for inquiry_list in ai_results:
       # リスト内の各辞書（レコード）をループ
-      for record in inquiry_list:
+      for record in inquiry_list.results:
           record_id = record.id
 
           # IDをキーとして、結果をリストに追加
-          # 一旦レコードまるまるリストに追加する
           results_by_id[record_id].append(record)
-
-  print("--- IDごとの全判定結果 ---") 
-  print(results_by_id)
 
   final_majority_results = []
   for id, result_lists in results_by_id.items():
