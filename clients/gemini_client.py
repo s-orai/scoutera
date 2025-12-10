@@ -31,12 +31,12 @@ class ResultsContainer(BaseModel):
   """結果全体を格納するコンテナ"""
   results: List[AiResult]
 
-def request(pdf, job_pdf, config):
+def request(pdf, job_pdfs, config):
   try:
-    job_pdf.append(pdf)
+    contents = [pdf] + list(job_pdfs)
     response = client.models.generate_content(
         model=model,
-        contents=job_pdf,
+        contents=contents,
         config=config
     )
     result = ResultsContainer.model_validate_json(response.text)
@@ -80,33 +80,25 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
     PDFリストを受け取り、各PDFに対して3回ずつAPIリクエストを並列実行し、
     結果を一つのリストにまとめて返します。
     """
-    # 全てのリクエストを格納するためのリスト
-    all_requests = []
-
-    # PDFごとに3回のリクエストの引数を作成
-    for pdf_path in pdf_list:
-        for i in range(1, 4):  # 1回目、2回目、3回目
-            all_requests.append((pdf_path, i))
+    all_requests = [
+        (pdf_path, attempt_num)
+        for pdf_path in pdf_list
+        for attempt_num in range(1, 4)
+    ]
 
     MAX_WORKERS = 10
-
     results = []
 
-    # ThreadPoolExecutorを使用してタスクを並列実行
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        # executor.submit() でタスクをキューに追加し、Futureオブジェクトを取得
         future_to_request = {
             executor.submit(request, pdf_path, job_pdf_list, config):
             (pdf_path, attempt_num)
             for pdf_path, attempt_num in all_requests
         }
 
-        # concurrent.futures.as_completed() で完了した順に結果を取得
         for future in concurrent.futures.as_completed(future_to_request):
             pdf_path, attempt_num = future_to_request[future]
-
             try:
-                # future.result() で実行結果を取得
                 result = future.result()
                 results.append(result)
             except Exception as exc:
@@ -120,21 +112,20 @@ def file_uploader(files, job_file):
     ファイルをGemini APIにアップロードし、ファイル名を 'with' ブロックに提供します。
     ブロック終了時に、成功・失敗に関わらず必ずファイルを削除します。
     """
-    uploaded_file = None
+    uploaded_files = []
+    uploaded_job_files = []
     try:
-      temp_uploaded_files = []
       for path, original_name in files:
-        uploaded_file = client.files.upload(file=path)
-        temp_uploaded_files.append(uploaded_file)
+        uploaded = client.files.upload(file=path)
+        uploaded_files.append(uploaded)
         print(f"  アップロード: {original_name}")
 
-      temp_uploaded_job_files = []
       for path, original_name in job_file:
-        uploaded_job_file = client.files.upload(file=path)
-        temp_uploaded_job_files.append(uploaded_job_file)
+        uploaded = client.files.upload(file=path)
+        uploaded_job_files.append(uploaded)
         print(f"  求人票アップロード: {original_name}")
 
-      yield (temp_uploaded_files, temp_uploaded_job_files)
+      yield (uploaded_files, uploaded_job_files)
 
     except Exception as e:
         # アップロードまたは 'with' ブロック内の処理で例外が発生した場合
@@ -143,7 +134,10 @@ def file_uploader(files, job_file):
 
     finally:
       ## 5. アップロードしたファイルの削除 (Gemini Filesから)
-      if uploaded_file:
-        print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded_file.name}) を削除します。")
-        client.files.delete(name=uploaded_file.name)
-        print("✅ 削除完了。")
+      for uploaded in uploaded_files + uploaded_job_files:
+        try:
+          print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded.name}) を削除します。")
+          client.files.delete(name=uploaded.name)
+          print("✅ 削除完了。")
+        except Exception as delete_error:
+          print(f"⚠️ ファイル削除に失敗しました: {delete_error}")

@@ -10,8 +10,8 @@ def format_prompt(judge_condition, required_condition, welcome_condition, job_ti
             ・PDFに記載されている候補者情報を全員分読み取ってください。
 
             【IDの取り扱いについて】
-            ・ファイル名に数字がふられている場合はその数字を「id」として扱ってください。
-            ・1つのPDFに複数の候補者情報が記載されている場合、各候補者の最初の情報として「BU」から始まる9文字のIDが記載されています。
+            ・ファイル名に数字が含まれているので、その数字を「id」として扱ってください。
+            ・ファイル名に数字が含まれておらず、1つのPDFに複数の候補者情報が記載されている場合は、各候補者の最初の情報として「BU」から始まる9文字のIDが記載されています。
               → この9文字のIDを「id」として扱ってください。
 
             スカウト業務を以下のSTEP1、STEP2の流れで対応してください。
@@ -82,46 +82,22 @@ def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_con
 
 
 def get_majority_decision(ai_results):
-  # AIからの結果をIDごとのリストに変更する
-  # IDをキー、evaluation_resultのリストを値とする辞書
   results_by_id = defaultdict(list)
-
-  # すべての問い合わせリストをループ
-  for inquiry_list in ai_results:
-      # リスト内の各辞書（レコード）をループ
-      for record in inquiry_list.results:
-          record_id = record.id
-
-          # IDをキーとして、結果をリストに追加
-          results_by_id[record_id].append(record)
+  for inquiry in ai_results:
+    for record in inquiry.results:
+      results_by_id[record.id].append(record)
 
   final_majority_results = []
-  for id, result_lists in results_by_id.items():
-    evaluations = []
-    for result in result_lists:
-      evaluation_result = result.evaluation_result
-      evaluations.append(evaluation_result)
-    
-    result_count = Counter(evaluations)
+  for id, records in results_by_id.items():
+    counts = Counter(record.evaluation_result for record in records)
+    majority_result = counts.most_common(1)[0][0] if counts else "N/A"
 
-    # 2. most_common(1)で最多の結果を取得
-    # 例: [('A', 2)] のような形式で返る
-    most_frequent = result_count.most_common(1)
-    
-    # 3. 結果の抽出
-    if most_frequent:
-        majority_result = most_frequent[0][0]
-    else:
-        # データがない場合 (通常は起こらない)
-        majority_result = "N/A"
-
-    for result in result_lists:
-      evaluation_result = result.evaluation_result
-      if evaluation_result == majority_result:
-        # 最終結果を保存
-        # 最終判定と同じ結果を出している最初のdictの内容を最終結果として出力
-        final_majority_results.append(result)
-        break
+    majority_record = next(
+      (record for record in records if record.evaluation_result == majority_result),
+      None
+    )
+    if majority_record:
+      final_majority_results.append(majority_record)
 
     print(f"ID: **{id}** の多数決結果: **{majority_result}**")
 

@@ -45,7 +45,7 @@ def show_search_console():
 
       try:
         # 3. 解析関数の実行
-        spreadsheet_url = logic.main_by_gemini(judge_condition, required_condition, welcome_condition, temp_file_info, temp_job_file_info, temperature)
+        spreadsheet_url = logic.main(judge_condition, required_condition, welcome_condition, temp_file_info, temp_job_file_info, temperature)
         st.write(f"作成したシート：{spreadsheet_url}")
       finally:
         # 4. ローカルの一時ファイルを削除
