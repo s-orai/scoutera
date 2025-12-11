@@ -1,4 +1,5 @@
 import json
+import re
 from clients import openai_client, gemini_client
 from collections import defaultdict, Counter
 
@@ -6,8 +7,11 @@ def format_prompt(judge_condition, required_condition, welcome_condition, job_ti
   return f"""
             あなたは優秀なリクルーターです。企業のリクルーターとして、添付した募集求人(ファイル名：{job_title})に対しての候補者にダイレクトスカウトを送信します。
             【PDFの扱いについて】
-            ・添付するPDFには複数の候補者の職歴が載っています。
+            ・ファイル名：{job_title}は募集求人として読み取ってください。
+            ・ファイル名：{job_title}以外のファイルは候補者情報として読み取ってください。
+            ・添付するPDFには複数の候補者の職歴が載っている場合があります。
             ・PDFに記載されている候補者情報を全員分読み取ってください。
+            ・判定はファイル名：{job_title}以外のファイルに対して行ってください。
 
             【IDの取り扱いについて】
             ・ファイル名に数字が含まれているので、その数字を「id」として扱ってください。
@@ -81,11 +85,27 @@ def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_con
   return finally_results
 
 
+def extract_numeric_id(id: str) -> str:
+  # 数字のみかチェック
+  if id.isdigit():
+    return id
+  
+  # BUで始まる場合はそのまま返す（抽出処理をスキップ）
+  if id.startswith("BU"):
+    return id
+  
+  # 数字以外が含まれている場合は数字のみを抽出
+  numeric_only = re.sub(r'\D', '', id)
+  return numeric_only
+
+
 def get_majority_decision(ai_results):
   results_by_id = defaultdict(list)
   for inquiry in ai_results:
     for record in inquiry.results:
-      results_by_id[record.id].append(record)
+      # IDから数字のみを抽出
+      numeric_id = extract_numeric_id(record.id)
+      results_by_id[numeric_id].append(record)
 
   final_majority_results = []
   for id, records in results_by_id.items():
