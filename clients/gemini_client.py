@@ -13,9 +13,6 @@ model = "gemini-3-pro-preview"
 client = genai.Client(api_key=api_key)
 n_trials = 3
 
-# def __init__(self) -> None:
-#   self.client = genai.Client(api_key=self.api_key)
-
 class AiResult(BaseModel):
   """
   AIの結果を格納するモデル
@@ -31,25 +28,35 @@ class ResultsContainer(BaseModel):
   """結果全体を格納するコンテナ"""
   results: List[AiResult]
 
-def request(pdf, job_pdfs, config):
-  try:
-    contents = [pdf] + list(job_pdfs)
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config=config
-    )
-    result = ResultsContainer.model_validate_json(response.text)
-    print(result)
-    return result
+def request(pdf, job_pdfs, config, max_retries: int = 3, backoff_seconds: float = 1.5):
+  for attempt in range(1, max_retries + 1):
+    try:
+      # API呼び出し
+      contents = [pdf] + list(job_pdfs)
+      response = client.models.generate_content(
+          model=model,
+          contents=contents,
+          config=config
+      )
+      result = ResultsContainer.model_validate_json(response.text)
+      print(result)
+      return result
 
-  except Exception as e:
-    print(f"❌ Gemini APIの実行中にエラーが発生しました: {e}")
-    raise
-  except json.JSONDecodeError as e:
-    print(f"JSON Parse Error: {str(e)}")
-    print("Invalid JSON content:", result)
-    raise
+    except json.JSONDecodeError as e:
+      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
+      print(f"JSON Parse Error: {str(e)}")
+      print("Invalid JSON content:", response.text if 'response' in locals() else '')
+      raise
+
+    except Exception as e:
+      # 最後の試行の場合は例外を再発生
+      if attempt == max_retries:
+        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
+        raise
+
+      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
+      time.sleep(backoff_seconds)
+      # ループが継続され、次の試行が実行される
 
 def request_with_files_by_parallel(prompt, files, job_file, temperature):
   print("--- 並列処理開始 ---")
