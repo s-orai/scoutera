@@ -44,7 +44,6 @@ def show_search_console():
         print(f"ファイル書き込み完了 ファイルパス: {tmp_job_file.name}")
 
       try:
-        # 3. 解析関数の実行
         spreadsheet_url = logic.main(judge_condition, required_condition, welcome_condition, temp_file_info, temp_job_file_info, temperature)
         st.write(f"作成したシート：{spreadsheet_url}")
       finally:
