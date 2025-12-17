@@ -1,6 +1,6 @@
-from google import genai
 from google.genai import types
 import streamlit as st
+from google import genai
 from pydantic import BaseModel
 from typing import List
 import json
@@ -12,6 +12,10 @@ api_key = st.secrets["gemini"]["api_key"]
 model = "gemini-3-pro-preview"
 client = genai.Client(api_key=api_key)
 n_trials = 3
+# リトライ回数上限
+max_retries = 3
+# リトライ時のAPI問い合わせ間隔
+backoff_seconds = 1.5
 
 class AiResult(BaseModel):
   """
@@ -28,7 +32,40 @@ class ResultsContainer(BaseModel):
   """結果全体を格納するコンテナ"""
   results: List[AiResult]
 
-def request(pdf, job_pdfs, config, max_retries: int = 3, backoff_seconds: float = 1.5):
+class CreatePromptModel(BaseModel):
+  common_skill_of_A: str
+  difference_of_ab_and_c: str
+  difference_of_a_and_b: str
+  required_condition: str
+  welcome_condition: str
+
+def request_for_create_prompt(prompt, files, job_file, temperature):
+  print("--- 処理開始 ---")
+  start_time = time.time()
+
+  ## response_schemaの作成
+  # PydanticモデルからJSONスキーマを取得
+  response_schema = CreatePromptModel.model_json_schema()
+  config = types.GenerateContentConfig(
+    system_instruction=prompt,
+    # JSON形式での出力を強制
+    response_mime_type="application/json",
+    response_schema = response_schema,
+    temperature = temperature
+  )
+
+  with file_uploader(files, job_file) as (uploaded_files, uploaded_job_files):
+    response = request(uploaded_files, uploaded_job_files, config)
+    result = CreatePromptModel.model_validate_json(response.text)
+    print(result)
+
+  end_time = time.time()
+  print("--- 並列処理終了 ---")
+  print(f"合計実行時間: {end_time - start_time:.2f}秒")
+  print(f"result: {result}")
+  return result
+
+def request(pdf, job_pdfs, config):
   for attempt in range(1, max_retries + 1):
     try:
       # API呼び出し
@@ -38,9 +75,7 @@ def request(pdf, job_pdfs, config, max_retries: int = 3, backoff_seconds: float 
           contents=contents,
           config=config
       )
-      result = ResultsContainer.model_validate_json(response.text)
-      print(result)
-      return result
+      return response
 
     except json.JSONDecodeError as e:
       # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
@@ -106,7 +141,9 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
         for future in concurrent.futures.as_completed(future_to_request):
             pdf_path, attempt_num = future_to_request[future]
             try:
-                result = future.result()
+                response = future.result()
+                result = ResultsContainer.model_validate_json(response.text)
+                print(result)
                 results.append(result)
             except Exception as exc:
                 print(f"PDF: {pdf_path}, 試行: {attempt_num} の実行中に例外が発生しました: {exc}")
@@ -114,7 +151,7 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
     return results
 
 @contextmanager
-def file_uploader(files, job_file):
+def file_uploader(files, job_file, is_round: bool = False):
     """
     ファイルをGemini APIにアップロードし、ファイル名を 'with' ブロックに提供します。
     ブロック終了時に、成功・失敗に関わらず必ずファイルを削除します。
@@ -132,7 +169,11 @@ def file_uploader(files, job_file):
         uploaded_job_files.append(uploaded)
         print(f"  求人票アップロード: {original_name}")
 
-      yield (uploaded_files, uploaded_job_files)
+      if not is_round:
+        yield (uploaded_files, uploaded_job_files)
+      else:
+        uploaded_files.extend(uploaded_job_files)
+        yield uploaded_files
 
     except Exception as e:
         # アップロードまたは 'with' ブロック内の処理で例外が発生した場合
