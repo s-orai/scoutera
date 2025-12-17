@@ -12,10 +12,6 @@ class GoogleClient:
         "https://www.googleapis.com/auth/spreadsheets"
     ]
 
-    FOLDER_ID = st.secrets["google"]["folder_id"]
-
-
-
     def __init__(self) -> None:
         # サービスアカウント認証
         self.credentials = Credentials.from_service_account_info(
@@ -28,14 +24,14 @@ class GoogleClient:
         # gspread 用クライアント
         self.gspread_client = gspread.authorize(self.credentials)
 
-    def create_spreadsheet(self):
+    def create_spreadsheet(self, folder_id):
 
         # スプレッドシートを作成（共有ドライブのフォルダ内）
         title = "import_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         file_metadata = {
             "name": title,
             "mimeType": "application/vnd.google-apps.spreadsheet",
-            "parents": [self.FOLDER_ID]
+            "parents": [folder_id]
         }
 
         spreadsheet = self.drive_client.files().create(

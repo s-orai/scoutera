@@ -2,14 +2,17 @@ import ai_matching
 import pandas as pd
 import create_prompt_logic
 from clients import google_client
+import streamlit as st
 
+scout_folder_id = st.secrets["google"]["scout_folder_id"]
+create_prompt_folder_id = st.secrets["google"]["create_prompt_folder_id"]
 
 # スプレッドシートへエクスポート
-def export_to_spredsheet(df):
+def export_to_spredsheet(df, folder_id):
     client = google_client.GoogleClient()
 
     # 1. 新しいスプレッドシートを作成（共有ドライブのフォルダ内）
-    spreadsheet_id = client.create_spreadsheet()
+    spreadsheet_id = client.create_spreadsheet(folder_id)
 
     # 2. データを書き込み
     spreadsheet_url = client.write_data(spreadsheet_id, df)
@@ -30,7 +33,7 @@ def main(judge_condition, required_condition, welcome_condition, pdfs, job_pdf, 
     "STEP2の結果(声がけした背景の文章)"
   ]
 
-  return export_to_spredsheet(df)
+  return export_to_spredsheet(df, scout_folder_id)
 
 def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, temperature):
   json = create_prompt_logic.create_list_by_gemini(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, temperature)
@@ -45,4 +48,4 @@ def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, tempera
     "歓迎要件（箇条書きで出力）"
   ]
 
-  return export_to_spredsheet(df)
+  return export_to_spredsheet(df, create_prompt_folder_id)
