@@ -11,7 +11,22 @@ def show_search_console():
   tab1, tab2 = st.tabs(["候補者ピックアップ", "プロンプト作成"], default="候補者ピックアップ")
 
   with tab1:
-    pdfs = st.file_uploader('候補者PDFアップロード', type=['pdf'], accept_multiple_files=True)
+    # セッション状態の初期化
+    # file_uploaderをリセットするためのカウンターとして使用します
+    if "uploader_key" not in st.session_state:
+      st.session_state["uploader_key"] = 0
+
+    pdfs = st.file_uploader(
+      '候補者PDFアップロード',
+      type=['pdf'],
+      accept_multiple_files=True,
+      key=f"uploader_{st.session_state['uploader_key']}"
+    )
+
+    if st.button("すべてのファイルを削除"):
+      # キーを更新することで、file_uploaderを初期状態に戻します
+      st.session_state["uploader_key"] += 1
+      st.rerun()
 
     job_pdf = st.file_uploader('求人票アップロード', type=['pdf'], accept_multiple_files=False)
 
