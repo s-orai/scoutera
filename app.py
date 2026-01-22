@@ -1,4 +1,9 @@
 import streamlit as st
+
+st.set_page_config(page_title="Scout Automation")
+st.title('Scout Automation')
+
+
 import streamlit_authenticator as stauth
 import yaml
 import search

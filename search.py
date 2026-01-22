@@ -4,11 +4,7 @@ import os
 from services import logic
 
 def show_search_console():
-
-  st.set_page_config(page_title="Scout Automation", layout="wide")
-  st.title('Scout Automation')
-
-  tab1, tab2 = st.tabs(["候補者ピックアップ", "プロンプト作成"], default="候補者ピックアップ")
+  tab1, tab2 = st.tabs(["候補者ピックアップ", "プロンプト作成"])
 
   with tab1:
     # セッション状態の初期化
@@ -30,14 +26,13 @@ def show_search_console():
 
     job_pdf = st.file_uploader('求人票アップロード', type=['pdf'], accept_multiple_files=False)
 
-    judge_condition = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+    judge_condition = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
+    required_condition = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
-    required_condition = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
+    welcome_condition = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
-    welcome_condition = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです', height='content')
-
-    temperature = st.number_input('temperature', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1, width=300)
+    temperature = st.number_input('temperature', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
 
     if st.button('開始'):
@@ -87,11 +82,11 @@ def show_search_console():
 
     job_pdf = st.file_uploader('求人票PDFアップロード', type=['pdf'], accept_multiple_files=False)
 
-    comment_B = st.text_area('B評価コメント', placeholder='B評価のコメントを入力してください', height='content')
+    comment_B = st.text_area('B評価コメント', placeholder='B評価のコメントを入力してください')
 
-    comment_C = st.text_area('C評価コメント', placeholder='C評価のコメントを入力してください', height='content')
+    comment_C = st.text_area('C評価コメント', placeholder='C評価のコメントを入力してください')
 
-    temperature_cp = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1, width=300)
+    temperature_cp = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
     if st.button('プロンプト作成開始'):
       with st.spinner('処理中です.....'):
