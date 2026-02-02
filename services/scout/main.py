@@ -1,7 +1,7 @@
 import streamlit as st
 import tempfile
 import os
-from services import logic
+from services.scout import logic
 
 def show_search_console():
   tab1, tab2 = st.tabs(["候補者ピックアップ", "プロンプト作成"])

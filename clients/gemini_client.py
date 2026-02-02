@@ -10,6 +10,8 @@ import concurrent.futures
 
 api_key = st.secrets["gemini"]["api_key"]
 model = "gemini-3-pro-preview"
+# model = "gemini-2.5-flash-lite"
+
 client = genai.Client(api_key=api_key)
 n_trials = 3
 # リトライ回数上限
@@ -150,6 +152,129 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
 
     return results
 
+
+# ----------------------------
+# ここからはjd用
+# ＊後で統合すること！！
+# ----------------------------
+class OfferingContentModel(BaseModel):
+  background: str
+  job_category: str
+  required_requirement: str
+  welcome_requirement: str
+  character_statue: str
+
+class BussinessDescriptionModel(BaseModel):
+  company_name: str
+  business_service_name: str
+  company_philosophy: str
+  business_introduction: str
+  business_detail: str
+
+def request_business_description(prompt, temperature):
+  print("--- 処理開始 ---")
+  start_time = time.time()
+
+  ## response_schemaの作成
+  # PydanticモデルからJSONスキーマを取得
+  response_schema = BussinessDescriptionModel.model_json_schema()
+  config = types.GenerateContentConfig(
+    # JSON形式での出力を強制
+    response_mime_type="application/json",
+    response_schema = response_schema,
+    temperature = temperature
+  )
+
+  response = _request_only_config(config, prompt)
+  result = BussinessDescriptionModel.model_validate_json(response.text)
+
+  end_time = time.time()
+  print(f"合計実行時間: {end_time - start_time:.2f}秒")
+  return result
+
+def request_with_files_for_jd(prompt, file, temperature):
+  print("--- 処理開始 ---")
+  start_time = time.time()
+
+  ## response_schemaの作成
+  # PydanticモデルからJSONスキーマを取得
+  response_schema = OfferingContentModel.model_json_schema()
+  config = types.GenerateContentConfig(
+    system_instruction=prompt,
+    # JSON形式での出力を強制
+    response_mime_type="application/json",
+    response_schema = response_schema,
+    temperature = temperature
+  )
+
+  with _file_uploader(file) as uploaded_file:
+    response = _request(uploaded_file, config)
+
+  end_time = time.time()
+  print(f"合計実行時間: {end_time - start_time:.2f}秒")
+  # レスポンスをパースしてモデルを返す（logic側でtuple/listと勘違いしないように）
+  result = OfferingContentModel.model_validate_json(response.text)
+  print(f"result: {result}")
+  return result
+
+def _request_only_config(config, prompt):
+  for attempt in range(1, max_retries + 1):
+    try:
+      # API呼び出し
+      response = client.models.generate_content(
+          model=model,
+          config=config,
+          contents=[prompt]
+      )
+      return response
+
+    except json.JSONDecodeError as e:
+      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
+      print(f"JSON Parse Error: {str(e)}")
+      print("Invalid JSON content:", response.text if 'response' in locals() else '')
+      raise
+
+    except Exception as e:
+      # 最後の試行の場合は例外を再発生
+      if attempt == max_retries:
+        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
+        raise
+
+      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
+      time.sleep(backoff_seconds)
+      # ループが継続され、次の試行が実行される
+
+def _request(pdf, config):
+  for attempt in range(1, max_retries + 1):
+    try:
+      # API呼び出し
+      contents = [pdf]
+      response = client.models.generate_content(
+          model=model,
+          contents=contents,
+          config=config
+      )
+      return response
+
+    except json.JSONDecodeError as e:
+      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
+      print(f"JSON Parse Error: {str(e)}")
+      print("Invalid JSON content:", response.text if 'response' in locals() else '')
+      raise
+
+    except Exception as e:
+      # 最後の試行の場合は例外を再発生
+      if attempt == max_retries:
+        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
+        raise
+
+      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
+      time.sleep(backoff_seconds)
+      # ループが継続され、次の試行が実行される
+
+# ----------------------------
+# 共通関数
+# ----------------------------
 @contextmanager
 def file_uploader(files, job_file, is_round: bool = False):
     """
@@ -183,6 +308,40 @@ def file_uploader(files, job_file, is_round: bool = False):
     finally:
       ## 5. アップロードしたファイルの削除 (Gemini Filesから)
       for uploaded in uploaded_files + uploaded_job_files:
+        try:
+          print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded.name}) を削除します。")
+          client.files.delete(name=uploaded.name)
+          print("✅ 削除完了。")
+        except Exception as delete_error:
+          print(f"⚠️ ファイル削除に失敗しました: {delete_error}")
+
+@contextmanager
+def _file_uploader(files):
+    """
+    ファイルをGemini APIにアップロードし、ファイル名を 'with' ブロックに提供します。
+    ブロック終了時に、成功・失敗に関わらず必ずファイルを削除します。
+    """
+    uploaded_files = []
+    try:
+      for path, original_name in files:
+        uploaded = client.files.upload(file=path)
+        uploaded_files.append(uploaded)
+        print(f"  アップロード: {original_name}")
+
+      # 1ファイルの場合は単体で、複数の場合はリストで渡す
+      if len(uploaded_files) == 1:
+        yield uploaded_files[0]
+      else:
+        yield uploaded_files
+
+    except Exception as e:
+        # アップロードまたは 'with' ブロック内の処理で例外が発生した場合
+        print(f"Error during file processing: {e}")
+        raise # 例外を呼び出し元に再スロー
+
+    finally:
+      ## 5. アップロードしたファイルの削除 (Gemini Filesから)
+      for uploaded in uploaded_files:
         try:
           print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded.name}) を削除します。")
           client.files.delete(name=uploaded.name)

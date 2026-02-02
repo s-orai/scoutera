@@ -1,6 +1,6 @@
-import ai_matching
+from services.scout import ai_matching
 import pandas as pd
-import create_prompt_logic
+from services.scout import create_prompt_logic
 from clients import google_client
 import streamlit as st
 

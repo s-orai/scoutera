@@ -1,4 +1,3 @@
-import json
 from clients import gemini_client
 
 def format_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_title):

@@ -1,6 +1,5 @@
-import json
 import re
-from clients import openai_client, gemini_client
+from clients import gemini_client
 from collections import defaultdict, Counter
 
 def format_prompt(judge_condition, required_condition, welcome_condition, job_title):
