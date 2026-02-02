@@ -10,7 +10,6 @@ import concurrent.futures
 
 api_key = st.secrets["gemini"]["api_key"]
 model = "gemini-3-pro-preview"
-# model = "gemini-2.5-flash-lite"
 
 client = genai.Client(api_key=api_key)
 n_trials = 3

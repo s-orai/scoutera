@@ -6,8 +6,7 @@ class OpenAIClient:
   def __init__(self) -> None:
     self.api_key = st.secrets["open_ai"]["api_key"]
     self.client = OpenAI(api_key=self.api_key)
-    # self.model = "gpt-4o-transcribe"
-    self.model = "gpt-4o-mini-transcribe"
+    self.model = "gpt-4o-transcribe"
 
   def transcribe_audio(self, audio_path: str) -> str:
       with open(audio_path, "rb") as audio_file:
