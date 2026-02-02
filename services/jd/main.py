@@ -61,7 +61,7 @@ def show_jd_create_console():
 
     temperature_jd = st.number_input('temperature_jd', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
-    if st.button('開始'):
+    if st.button('作成開始'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
         if company_info2 is None:
