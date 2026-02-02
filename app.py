@@ -44,11 +44,11 @@ def login():
         st.warning("ユーザー名とパスワードを入力してください")
 
 def scout_page():
-    st.title('Scout Automation')
+    st.title('スカウト候補者ピックアップツール')
     scout.show_search_console()
 
 def jd_page():
-    st.title('Jd Assist')
+    st.title('求人票作成アシストツール')
     jd.show_jd_create_console()
 
 def logout_page():
@@ -69,13 +69,13 @@ def main():
         st.title("メニュー")
         st.session_state.page = st.radio(
             "ページ選択",
-            ["Scout", "Jd", "Logout"]
+            ["スカウト効率化", "求人票作成", "Logout"]
         )
 
     # ページ切り替え
-    if st.session_state.page == "Scout":
+    if st.session_state.page == "スカウト効率化":
         scout_page()
-    elif st.session_state.page == "Jd":
+    elif st.session_state.page == "求人票作成":
         jd_page()
     elif st.session_state.page == "Logout":
         logout_page()
