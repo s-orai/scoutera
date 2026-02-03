@@ -19,6 +19,18 @@ def show_jd_create_console():
 
     temperature = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
+    st.markdown(
+      """
+      <style>
+      pre code {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+      }
+      </style>
+      """,
+      unsafe_allow_html=True
+    )
+
     if st.button('開始'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
@@ -60,6 +72,18 @@ def show_jd_create_console():
     company_info2 = st.text_area('会社情報2', placeholder='会社情報を入力してください')
 
     temperature_jd = st.number_input('temperature_jd', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
+
+    st.markdown(
+      """
+      <style>
+      pre code {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+      }
+      </style>
+      """,
+      unsafe_allow_html=True
+    )
 
     if st.button('作成開始'):
       with st.spinner('処理中です.....'):
