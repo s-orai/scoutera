@@ -4,7 +4,7 @@ import os
 from services.jd import logic
 
 def show_jd_create_console():
-  tab1, tab2 = st.tabs(["求人票作成", "会社・事業説明"])
+  tab1, tab2, tab3 = st.tabs(["求人票作成", "会社・事業説明(Gemini)", "会社・事業説明（chatGPT）"])
 
   with tab1:
     company_info = st.text_area('会社情報', placeholder='会社情報を入力してください')
@@ -85,7 +85,7 @@ def show_jd_create_console():
       unsafe_allow_html=True
     )
 
-    if st.button('作成開始'):
+    if st.button('作成開始(Gemini)'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
         if company_info2 is None:
@@ -94,6 +94,46 @@ def show_jd_create_console():
 
         try:
           res_company_info = logic.create_business_description(company_info2, temperature_jd)
+          st.header("作成した会社・事業説明")
+          st.subheader("会社名", divider=True)
+          st.code(res_company_info['company_name'], language=None)
+          st.subheader("事業サービス名", divider=True)
+          st.code(res_company_info['business_service_name'], language=None)
+          st.subheader("企業理念", divider=True)
+          st.code(res_company_info['company_philosophy'], language=None)
+          st.subheader("事業紹介", divider=True)
+          st.code(res_company_info['business_introduction'], language=None)
+          st.subheader("事業の詳細", divider=True)
+          st.code(res_company_info['business_detail'], language=None)
+        except Exception as e:
+          st.write(f"エラーが発生しました。{e}")
+
+  with tab3:
+    company_info3 = st.text_area('会社情報3', placeholder='会社情報を入力してください')
+
+    temperature_jd_chatgpt = st.number_input('temperature_jd_chatgpt', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
+
+    st.markdown(
+      """
+      <style>
+      pre code {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+      }
+      </style>
+      """,
+      unsafe_allow_html=True
+    )
+
+    if st.button('作成開始(chatGPT)'):
+      with st.spinner('処理中です.....'):
+        # 入力チェック：どちらか欠けている場合は処理しない
+        if company_info3 is None:
+          st.error("会社情報を入力してください。")
+          return
+
+        try:
+          res_company_info = logic.create_business_description_chatgpt(company_info3, temperature_jd_chatgpt)
           st.header("作成した会社・事業説明")
           st.subheader("会社名", divider=True)
           st.code(res_company_info['company_name'], language=None)

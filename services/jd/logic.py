@@ -18,11 +18,22 @@ google_cli = google_client.GoogleClient()
 openai_cli = openai_client.OpenAIClient()
 
 
-def create_business_description(company_info, temperature):
+def create_business_description(url, temperature):
+  company_info = preparation_ai.scrape_page_text(url)
   prompt = preparation_ai.format_prompt_for_business_description(company_info)
   result = gemini_client.request_business_description(prompt, temperature)
   data_dicts = result.model_dump()
   df = pd.DataFrame([data_dicts])
+
+  return df.iloc[0]
+
+def create_business_description_chatgpt(company_info, temperature):
+  prompt = preparation_ai.format_prompt_for_business_description(company_info)
+  result = openai_cli.chat(prompt, temperature)
+  # 余分な文字列を削除
+  cleaned_res = result.replace('```json', '').replace('```', '').strip()
+  parsed_json = json.loads(cleaned_res)
+  df = pd.DataFrame([parsed_json])
 
   return df.iloc[0]
 
