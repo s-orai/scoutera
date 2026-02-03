@@ -10,6 +10,7 @@ def format_prompt_for_business_description(company_info):
 
             # 会社情報
             {company_info}
+            ※ 渡したページのリンク以外からは情報を取らないこと
 
             # 作成条件
             以下の「会社名」「事業サービス名」「企業理念」「事業紹介」「事業の詳細」の5項目を、それぞれ構成と制約条件に基づいて作成してください
