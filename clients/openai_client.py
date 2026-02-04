@@ -6,7 +6,7 @@ class OpenAIClient:
   def __init__(self) -> None:
     self.api_key = st.secrets["open_ai"]["api_key"]
     self.client = OpenAI(api_key=self.api_key)
-    self.transcribe_model = "gpt-4o-mini-transcribe"
+    self.transcribe_model = "gpt-4o-transcribe"
     self.model = "gpt-4.1-2025-04-14"
 
   def chat(self, prompt: str, temperature) -> str:

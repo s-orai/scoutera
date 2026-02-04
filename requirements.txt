@@ -16,3 +16,5 @@ streamlit-authenticator
 google-genai
 altair==4.2.2
 ffmpeg-python
+beautifulsoup4
+requests

@@ -19,15 +19,48 @@ openai_cli = openai_client.OpenAIClient()
 
 
 def create_business_description(url, temperature):
-  # company_info = preparation_ai.scrape_page_text(url)
-  prompt = preparation_ai.format_prompt_for_business_description(url)
+  # URLが複数ある場合（改行区切り）に対応
+  urls = [u.strip() for u in url.split('\n') if u.strip()]
+  
+  # 各URLをスクレイピングしてテキストを結合
+  company_info_parts = []
+  for single_url in urls:
+    try:
+      scraped_text = preparation_ai.scrape_page_text(single_url)
+      if scraped_text:
+        company_info_parts.append(f"=== {single_url} ===\n{scraped_text}")
+    except Exception as e:
+      print(f"⚠️ URLのスクレイピングに失敗しました ({single_url}): {e}")
+      continue
+  
+  # すべてのテキストを結合
+  company_info = "\n\n".join(company_info_parts)
+  
+  prompt = preparation_ai.format_prompt_for_business_description(company_info)
   result = gemini_client.request_business_description(prompt, temperature)
   data_dicts = result.model_dump()
   df = pd.DataFrame([data_dicts])
 
   return df.iloc[0]
 
-def create_business_description_chatgpt(company_info, temperature):
+def create_business_description_chatgpt(url, temperature):
+  # URLが複数ある場合（改行区切り）に対応
+  urls = [u.strip() for u in url.split('\n') if u.strip()]
+  
+  # 各URLをスクレイピングしてテキストを結合
+  company_info_parts = []
+  for single_url in urls:
+    try:
+      scraped_text = preparation_ai.scrape_page_text(single_url)
+      if scraped_text:
+        company_info_parts.append(f"=== {single_url} ===\n{scraped_text}")
+    except Exception as e:
+      print(f"⚠️ URLのスクレイピングに失敗しました ({single_url}): {e}")
+      continue
+  
+  # すべてのテキストを結合
+  company_info = "\n\n".join(company_info_parts)
+
   prompt = preparation_ai.format_prompt_for_business_description(company_info)
   result = openai_cli.chat(prompt, temperature)
   # 余分な文字列を削除
