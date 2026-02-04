@@ -19,8 +19,8 @@ openai_cli = openai_client.OpenAIClient()
 
 
 def create_business_description(url, temperature):
-  company_info = preparation_ai.scrape_page_text(url)
-  prompt = preparation_ai.format_prompt_for_business_description(company_info)
+  # company_info = preparation_ai.scrape_page_text(url)
+  prompt = preparation_ai.format_prompt_for_business_description(url)
   result = gemini_client.request_business_description(prompt, temperature)
   data_dicts = result.model_dump()
   df = pd.DataFrame([data_dicts])
