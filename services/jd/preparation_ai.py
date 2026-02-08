@@ -1,5 +1,4 @@
 import re
-from clients import gemini_client
 from collections import defaultdict, Counter
 import requests
 from bs4 import BeautifulSoup

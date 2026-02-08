@@ -43,33 +43,6 @@ def create_business_description(url, temperature):
 
   return df.iloc[0]
 
-def create_business_description_chatgpt(url, temperature):
-  # URLが複数ある場合（改行区切り）に対応
-  urls = [u.strip() for u in url.split('\n') if u.strip()]
-  
-  # 各URLをスクレイピングしてテキストを結合
-  company_info_parts = []
-  for single_url in urls:
-    try:
-      scraped_text = preparation_ai.scrape_page_text(single_url)
-      if scraped_text:
-        company_info_parts.append(f"=== {single_url} ===\n{scraped_text}")
-    except Exception as e:
-      print(f"⚠️ URLのスクレイピングに失敗しました ({single_url}): {e}")
-      continue
-  
-  # すべてのテキストを結合
-  company_info = "\n\n".join(company_info_parts)
-
-  prompt = preparation_ai.format_prompt_for_business_description(company_info)
-  result = openai_cli.chat(prompt, temperature)
-  # 余分な文字列を削除
-  cleaned_res = result.replace('```json', '').replace('```', '').strip()
-  parsed_json = json.loads(cleaned_res)
-  df = pd.DataFrame([parsed_json])
-
-  return df.iloc[0]
-
 
 def create_jd(url, video_link, jd_pdf, temperature):
   file_id = _extract_file_id(video_link)
