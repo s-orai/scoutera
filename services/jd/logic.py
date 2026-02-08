@@ -44,9 +44,9 @@ def create_business_description(url, temperature):
   return df.iloc[0]
 
 
-def create_jd(url, video_link, jd_pdf, temperature):
-  file_id = _extract_file_id(video_link)
-  audio_text = _audio_transcription(file_id)
+def create_jd(url, hearing_info, jd_pdf, temperature):
+  # file_id = _extract_file_id(video_link)
+  # audio_text = _audio_transcription(file_id)
 
   for _, original_name in jd_pdf:
     jd_title = original_name
@@ -68,7 +68,7 @@ def create_jd(url, video_link, jd_pdf, temperature):
   # すべてのテキストを結合
   company_info = "\n\n".join(company_info_parts)
 
-  prompt = preparation_ai.format_prompt_for_jd(company_info, audio_text, jd_title)
+  prompt = preparation_ai.format_prompt_for_jd(company_info, hearing_info, jd_title)
 
   result = gemini_client.request_with_files_for_jd(prompt, jd_pdf, temperature)
   data_dicts = result.model_dump()

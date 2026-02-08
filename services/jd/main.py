@@ -9,7 +9,7 @@ def show_jd_create_console():
   with tab1:
     company_info = st.text_area('会社情報', placeholder='会社情報を入力してください')
 
-    video_link = st.text_input('録画リンクを入力')
+    hearing_info = st.text_area('ヒアリング内容', placeholder='ヒアリング内容を入力してください')
 
     jd_pdf = st.file_uploader(
       '参考求人票PDFアップロード',
@@ -35,7 +35,7 @@ def show_jd_create_console():
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
         if jd_pdf is None:
-          st.error("求人票PDFをアップロードしてください。")
+          st.error("参考求人票PDFをアップロードしてください。")
           return
 
         temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
@@ -45,7 +45,7 @@ def show_jd_create_console():
           print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
 
         try:
-          res = logic.create_jd(company_info, video_link, temp_file_info, temperature)
+          res = logic.create_jd(company_info, hearing_info, temp_file_info, temperature)
           st.header("作成した募集要項")
           st.subheader("募集背景", divider=True)
           st.code(res['background'], language=None)

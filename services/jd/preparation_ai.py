@@ -100,7 +100,7 @@ def format_prompt_for_business_description(company_info):
             ・これは最終出力であり、途中思考は出力しないでください。
             """
 
-def format_prompt_for_jd(company_info, text, jd_title):
+def format_prompt_for_jd(company_info, hearing_info, jd_title):
   return f"""
             あなたは企業の採用担当として、募集ポジションに対する求人票を作成しています。
             求人票の要となる、募集背景、仕事内容、募集要項のパートを作成してください。
@@ -113,7 +113,7 @@ def format_prompt_for_jd(company_info, text, jd_title):
             ## 会社情報
             {company_info}
             ## 募集ポジションの詳細
-            {text}
+            {hearing_info}
 
             # 作成条件
             以下の「募集背景」「仕事内容」「必須要件」「歓迎要件」「求める人物像」の5項目を、それぞれ構成と制約条件に基づいて作成してください
