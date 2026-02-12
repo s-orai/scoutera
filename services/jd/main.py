@@ -11,10 +11,10 @@ def show_jd_create_console():
 
     hearing_info = st.text_area('ヒアリング内容', placeholder='ヒアリング内容を入力してください')
 
-    jd_pdf = st.file_uploader(
+    jd_pdfs = st.file_uploader(
       '参考求人票PDFアップロード',
       type=['pdf'],
-      accept_multiple_files=False,
+      accept_multiple_files=True,
     )
 
     temperature = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
@@ -34,15 +34,16 @@ def show_jd_create_console():
     if st.button('開始'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
-        if jd_pdf is None:
+        if jd_pdfs is None:
           st.error("参考求人票PDFをアップロードしてください。")
           return
 
         temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-          tmp_file.write(jd_pdf.getvalue()) # アップロードされたファイルの内容を書き込む
-          temp_file_info.append((tmp_file.name, jd_pdf.name))
-          print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+        for uploaded_file in jd_pdfs:
+          with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
+            temp_file_info.append((tmp_file.name, uploaded_file.name))
+            print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
 
         try:
           res = logic.create_jd(company_info, hearing_info, temp_file_info, temperature)

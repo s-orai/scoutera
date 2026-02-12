@@ -191,7 +191,7 @@ def request_business_description(prompt, temperature):
   print(f"合計実行時間: {end_time - start_time:.2f}秒")
   return result
 
-def request_with_files_for_jd(prompt, file, temperature):
+def request_with_files_for_jd(prompt, files, temperature):
   print("--- 処理開始 ---")
   start_time = time.time()
 
@@ -206,8 +206,8 @@ def request_with_files_for_jd(prompt, file, temperature):
     temperature = temperature
   )
 
-  with _file_uploader(file) as uploaded_file:
-    response = _request(uploaded_file, config)
+  with _file_uploader(files) as uploaded_files:
+    response = _request(uploaded_files, config)
 
   end_time = time.time()
   print(f"合計実行時間: {end_time - start_time:.2f}秒")
@@ -243,11 +243,11 @@ def _request_only_config(config, prompt):
       time.sleep(backoff_seconds)
       # ループが継続され、次の試行が実行される
 
-def _request(pdf, config):
+def _request(pdfs, config):
   for attempt in range(1, max_retries + 1):
     try:
       # API呼び出し
-      contents = [pdf]
+      contents = pdfs
       response = client.models.generate_content(
           model=model,
           contents=contents,

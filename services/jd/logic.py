@@ -44,12 +44,11 @@ def create_business_description(url, temperature):
   return df.iloc[0]
 
 
-def create_jd(url, hearing_info, jd_pdf, temperature):
-  # file_id = _extract_file_id(video_link)
-  # audio_text = _audio_transcription(file_id)
+def create_jd(url, hearing_info, jd_pdfs, temperature):
 
-  for _, original_name in jd_pdf:
-    jd_title = original_name
+  jd_titles = []
+  for _, original_name in jd_pdfs:
+    jd_titles.append(original_name)
 
   # URLが複数ある場合（改行区切り）に対応
   urls = [u.strip() for u in url.split('\n') if u.strip()]
@@ -68,9 +67,9 @@ def create_jd(url, hearing_info, jd_pdf, temperature):
   # すべてのテキストを結合
   company_info = "\n\n".join(company_info_parts)
 
-  prompt = preparation_ai.format_prompt_for_jd(company_info, hearing_info, jd_title)
+  prompt = preparation_ai.format_prompt_for_jd(company_info, hearing_info, jd_titles)
 
-  result = gemini_client.request_with_files_for_jd(prompt, jd_pdf, temperature)
+  result = gemini_client.request_with_files_for_jd(prompt, jd_pdfs, temperature)
   data_dicts = result.model_dump()
   df = pd.DataFrame([data_dicts])
   df = _enrich_jd_with_job_description(df)
