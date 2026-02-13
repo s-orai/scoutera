@@ -2,10 +2,12 @@ from services.scout import ai_matching
 import pandas as pd
 from services.scout import create_prompt_logic
 from clients import google_client
+from clients import gemini_client
 import streamlit as st
 
 scout_folder_id = st.secrets["google"]["scout_folder_id"]
 create_prompt_folder_id = st.secrets["google"]["create_prompt_folder_id"]
+scout_material_folder_id = st.secrets["google"]["scout_material_folder_id"]
 
 # スプレッドシートへエクスポート
 def export_to_spredsheet(df, folder_id):
@@ -49,3 +51,24 @@ def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, tempera
   ]
 
   return export_to_spredsheet(df, create_prompt_folder_id)
+
+def create_scout_material(job_pdf, temperature):
+  for _, original_name in job_pdf:
+    pdf_title = original_name
+
+  prompt = ai_matching.format_prompt_for_scout_material(pdf_title)
+  result = gemini_client.request_with_files_for_scout_material(prompt, job_pdf, temperature)
+  data_dicts = result.model_dump()
+  df = pd.DataFrame([data_dicts])
+  df.columns = [
+    "募集ポジションにマッチする候補者のペルソナ",
+    "経験職種",
+    "経験業種",
+    "検索キーワード",
+    "現年収",
+    "希望年収",
+    "スカウト件名",
+    "スカウト文面"
+  ]
+
+  return export_to_spredsheet(df, scout_material_folder_id)

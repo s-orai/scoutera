@@ -4,7 +4,7 @@ import os
 from services.scout import logic
 
 def show_search_console():
-  tab1, tab2 = st.tabs(["候補者ピックアップ", "プロンプト作成"])
+  tab1, tab2, tab3 = st.tabs(["候補者ピックアップ", "プロンプト作成", "スカウト素材出力"])
 
   with tab1:
     # セッション状態の初期化
@@ -138,6 +138,35 @@ def show_search_console():
           for tmp_job_pdf_path, _ in job_file_info:
             try:
               os.remove(tmp_job_pdf_path)
+            except FileNotFoundError:
+              # 何らかの理由で既に削除されている場合はスキップ
+              pass
+
+  with tab3:
+    pdf = st.file_uploader('スカウト素材PDFアップロード', type=['pdf'], accept_multiple_files=False)
+    
+    temperature_scout = st.number_input('temperature_scout', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
+
+    if st.button('スカウト素材出力開始'):
+      with st.spinner('処理中です.....'):
+        if pdfs is None:
+          st.error("スカウト素材PDFをアップロードしてください。")
+          return
+
+        job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+          tmp_file.write(pdf.getvalue()) # アップロードされたファイルの内容を書き込む
+          job_file_info.append((tmp_file.name, pdf.name))
+          print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+
+        try:
+          spreadsheet_url = logic.create_scout_material(job_file_info, temperature_scout)
+          st.write(f"作成したシート：{spreadsheet_url}")
+        finally:
+          # 4. ローカルの一時ファイルを削除
+          for job_file_path, _ in job_file_info:
+            try:
+              os.remove(job_file_path)
             except FileNotFoundError:
               # 何らかの理由で既に削除されている場合はスキップ
               pass

@@ -40,6 +40,16 @@ class CreatePromptModel(BaseModel):
   required_condition: str
   welcome_condition: str
 
+class ScoutMaterialModel(BaseModel):
+  persona: str
+  category: str
+  industry: str
+  keyword: str
+  income: str
+  desired_income: str
+  scout_title: str
+  scout_body: str
+
 def request_for_create_prompt(prompt, files, job_file, temperature):
   print("--- 処理開始 ---")
   start_time = time.time()
@@ -151,6 +161,30 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
 
     return results
 
+def request_with_files_for_scout_material(prompt, files, temperature):
+  print("--- 処理開始 ---")
+  start_time = time.time()
+
+  ## response_schemaの作成
+  # PydanticモデルからJSONスキーマを取得
+  response_schema = ScoutMaterialModel.model_json_schema()
+  config = types.GenerateContentConfig(
+    system_instruction=prompt,
+    # JSON形式での出力を強制
+    response_mime_type="application/json",
+    response_schema = response_schema,
+    temperature = temperature
+  )
+
+  with _file_uploader(files) as uploaded_files:
+    response = _request(uploaded_files, config)
+
+  end_time = time.time()
+  print(f"合計実行時間: {end_time - start_time:.2f}秒")
+  # レスポンスをパースしてモデルを返す（logic側でtuple/listと勘違いしないように）
+  result = ScoutMaterialModel.model_validate_json(response.text)
+  print(f"result: {result}")
+  return result
 
 # ----------------------------
 # ここからはjd用
