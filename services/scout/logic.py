@@ -22,8 +22,8 @@ def export_to_spredsheet(df, folder_id):
     return spreadsheet_url
 
 
-def main(judge_condition, required_condition, welcome_condition, pdfs, job_pdf):
-  json = ai_matching.create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf)
+def main(required_condition, welcome_condition, pdfs, job_pdf):
+  json = ai_matching.create_list_by_gemini(pdfs, required_condition, welcome_condition, job_pdf)
   data_dicts = [item.model_dump() for item in json]
   df = pd.DataFrame(data_dicts)
   df.columns = [

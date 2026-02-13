@@ -2,7 +2,7 @@ import re
 from clients import gemini_client
 from collections import defaultdict, Counter
 
-def format_prompt(judge_condition, required_condition, welcome_condition, job_title):
+def format_prompt(required_condition, welcome_condition, job_title):
   return f"""
             あなたは優秀なリクルーターです。企業のリクルーターとして、添付した募集求人(ファイル名：{job_title})に対しての候補者にダイレクトスカウトを送信します。
             【PDFの扱いについて】
@@ -28,7 +28,9 @@ def format_prompt(judge_condition, required_condition, welcome_condition, job_ti
 
             ・複数の候補者情報が記載されたPDFを添付します。それぞれの候補者についてA/B/Cの判定をしてください。
             判定条件は次の通りです。
-              {judge_condition}
+              ・A評価：必須要件を満たし、かつ歓迎要件を一部以上満たす場合
+              ・B評価：必須要件は満たすが、歓迎要件は満たさない場合
+              ・C評価：必須要件を一部でも満たさない場合
 
             <必須要件>
               {required_condition}
@@ -72,12 +74,12 @@ def format_prompt(judge_condition, required_condition, welcome_condition, job_ti
             """
 
 
-def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf):
+def create_list_by_gemini(pdfs, required_condition, welcome_condition, job_pdf):
   job_title = ""
   for _, original_name in job_pdf:
     job_title = original_name
 
-  prompt = format_prompt(judge_condition, required_condition, welcome_condition, job_title)
+  prompt = format_prompt(required_condition, welcome_condition, job_title)
   results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf)
 
   finally_results = get_majority_decision(results)

@@ -26,8 +26,6 @@ def show_search_console():
 
     job_pdf = st.file_uploader('求人票アップロード', type=['pdf'], accept_multiple_files=False)
 
-    judge_condition = st.text_area('A/B/C判定の基準', placeholder='判定の基準を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
-
     required_condition = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
     welcome_condition = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
@@ -54,7 +52,7 @@ def show_search_console():
           print(f"ファイル書き込み完了 ファイルパス: {tmp_job_file.name}")
 
         try:
-          spreadsheet_url = logic.main(judge_condition, required_condition, welcome_condition, temp_file_info, temp_job_file_info)
+          spreadsheet_url = logic.main(required_condition, welcome_condition, temp_file_info, temp_job_file_info)
           st.write(f"作成したシート：{spreadsheet_url}")
         finally:
           # 4. ローカルの一時ファイルを削除
