@@ -72,13 +72,13 @@ def format_prompt(judge_condition, required_condition, welcome_condition, job_ti
             """
 
 
-def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature):
+def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf):
   job_title = ""
   for _, original_name in job_pdf:
     job_title = original_name
 
   prompt = format_prompt(judge_condition, required_condition, welcome_condition, job_title)
-  results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf, temperature)
+  results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf)
 
   finally_results = get_majority_decision(results)
   return finally_results

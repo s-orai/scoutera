@@ -92,7 +92,7 @@ def format_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_title):
             """
 
 
-def create_list_by_gemini(pdfs_a, pdfs_b, pdfs_c, comment_b, comment_c, job_pdf, temperature):
+def create_list_by_gemini(pdfs_a, pdfs_b, pdfs_c, comment_b, comment_c, job_pdf):
   job_title = ""
   for _, original_name in job_pdf:
     job_title = original_name
@@ -103,7 +103,7 @@ def create_list_by_gemini(pdfs_a, pdfs_b, pdfs_c, comment_b, comment_c, job_pdf,
 
   prompt = format_prompt(pdfs_a_titles, pdfs_b_titles, pdfs_c_titles, comment_b, comment_c, job_title)
   pdfs = pdfs_a + pdfs_b + pdfs_c
-  result = gemini_client.request_for_create_prompt(prompt, pdfs, job_pdf, temperature)
+  result = gemini_client.request_for_create_prompt(prompt, pdfs, job_pdf)
 
   return result
 

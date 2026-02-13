@@ -50,7 +50,7 @@ class ScoutMaterialModel(BaseModel):
   scout_title: str
   scout_body: str
 
-def request_for_create_prompt(prompt, files, job_file, temperature):
+def request_for_create_prompt(prompt, files, job_file, temperature=0.2):
   print("--- 処理開始 ---")
   start_time = time.time()
 
@@ -104,7 +104,7 @@ def request(pdf, job_pdfs, config):
       time.sleep(backoff_seconds)
       # ループが継続され、次の試行が実行される
 
-def request_with_files_by_parallel(prompt, files, job_file, temperature):
+def request_with_files_by_parallel(prompt, files, job_file, temperature=0.2):
   print("--- 並列処理開始 ---")
   start_time = time.time()
 

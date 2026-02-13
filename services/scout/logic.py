@@ -22,8 +22,8 @@ def export_to_spredsheet(df, folder_id):
     return spreadsheet_url
 
 
-def main(judge_condition, required_condition, welcome_condition, pdfs, job_pdf, temperature):
-  json = ai_matching.create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature)
+def main(judge_condition, required_condition, welcome_condition, pdfs, job_pdf):
+  json = ai_matching.create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf)
   data_dicts = [item.model_dump() for item in json]
   df = pd.DataFrame(data_dicts)
   df.columns = [
@@ -37,8 +37,8 @@ def main(judge_condition, required_condition, welcome_condition, pdfs, job_pdf, 
 
   return export_to_spredsheet(df, scout_folder_id)
 
-def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, temperature):
-  json = create_prompt_logic.create_list_by_gemini(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf, temperature)
+def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf):
+  json = create_prompt_logic.create_list_by_gemini(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf)
 
   data_dicts = [json.model_dump()]
   df = pd.DataFrame(data_dicts)
