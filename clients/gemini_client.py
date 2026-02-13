@@ -161,7 +161,7 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
 
     return results
 
-def request_with_files_for_scout_material(prompt, files, temperature):
+def request_with_files_for_scout_material(prompt, files, temperature=0.2):
   print("--- 処理開始 ---")
   start_time = time.time()
 
