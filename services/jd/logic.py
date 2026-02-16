@@ -95,9 +95,7 @@ def _enrich_jd_with_job_description(df):
     
     # 募集職種を抽出して仕事内容をマッピング
     if 'job_category' in enriched_df.columns:
-      enriched_df['job_content'] = enriched_df['job_category'].apply(
-        lambda x: job_mapping.get(x, "該当する職種の仕事内容が見つかりませんでした")
-      )
+      enriched_df['job_content'] = enriched_df['job_category'].apply(lambda x: _get_job_content(x, job_mapping))
       print(f"✅ {len(enriched_df)}件の募集職種に仕事内容を追加しました")
     else:
       print("⚠️ データフレームに'job_category'カラムが存在しません")
@@ -280,3 +278,32 @@ def _merge_text(results: dict) -> str:
     return "\n".join(
         results[i] for i in sorted(results)
     )
+
+def _get_job_content(job_category, job_mapping):
+  """
+  完全一致を優先し、なければ部分一致するものを全て取得する
+  
+  Args:
+      job_category: 検索する職種名
+  
+  Returns:
+      str: 仕事内容（部分一致の場合は区切り線で区別）
+  """
+  # 完全一致を試行
+  if job_category in job_mapping:
+    return job_mapping[job_category]
+  
+  # 部分一致を検索
+  partial_matches = []
+  for key, value in job_mapping.items():
+    if job_category in key or key in job_category:
+      partial_matches.append(f"【{key}】\n{value}")
+  
+  # 部分一致が見つかった場合
+  if partial_matches:
+    line = "\n\n" + "="*50 + "\n"
+    return "="*50 + "\n" +line.join(partial_matches)
+  
+  # どちらも見つからない場合
+  return "該当する職種の仕事内容が見つかりませんでした"
+
