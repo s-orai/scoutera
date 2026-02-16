@@ -137,7 +137,7 @@ def show_search_console():
               pass
 
   with tab3:
-    pdf = st.file_uploader('求人票PDFアップロード ', type=['pdf'], accept_multiple_files=False)
+    pdf = st.file_uploader('求人票PDFアップロード_スカウト素材出力', type=['pdf'], accept_multiple_files=False)
 
     if st.button('スカウト素材出力開始'):
       with st.spinner('処理中です.....'):
