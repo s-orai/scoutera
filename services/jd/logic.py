@@ -296,6 +296,8 @@ def _get_job_content(job_category, job_mapping):
   # 部分一致を検索
   partial_matches = []
   for key, value in job_mapping.items():
+    # 既存のケース: job_category が key に含まれる、または key が job_category に含まれる
+    # 追加ケース: 単語レベルでの部分一致（スペースや記号で区切られた単語として）
     if job_category in key or key in job_category:
       partial_matches.append(f"【{key}】\n{value}")
   

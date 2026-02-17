@@ -1,5 +1,6 @@
 import re
 from clients import gemini_client
+from models.scout_models import ResultsContainer
 from collections import defaultdict, Counter
 
 def format_prompt(required_condition, welcome_condition, job_title):
@@ -80,7 +81,12 @@ def create_list_by_gemini(pdfs, required_condition, welcome_condition, job_pdf):
     job_title = original_name
 
   prompt = format_prompt(required_condition, welcome_condition, job_title)
-  results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf)
+  results = gemini_client.request_with_files_by_parallel(
+    prompt, 
+    pdfs, 
+    job_pdf, 
+    ResultsContainer
+  )
 
   finally_results = get_majority_decision(results)
   return finally_results

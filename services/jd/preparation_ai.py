@@ -183,18 +183,6 @@ def format_prompt_for_jd(company_info, hearing_info, jd_title):
           """
 
 
-# def create_list_by_gemini(pdfs, judge_condition, required_condition, welcome_condition, job_pdf, temperature):
-#   job_title = ""
-#   for _, original_name in job_pdf:
-#     job_title = original_name
-
-#   prompt = format_prompt(judge_condition, required_condition, welcome_condition, job_title)
-#   results = gemini_client.request_with_files_by_parallel(prompt, pdfs, job_pdf, temperature)
-
-#   finally_results = get_majority_decision(results)
-#   return finally_results
-
-
 def extract_numeric_id(id: str) -> str:
   # 数字のみかチェック
   if id.isdigit():

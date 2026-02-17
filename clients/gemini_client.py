@@ -1,12 +1,42 @@
 from google.genai import types
 import streamlit as st
 from google import genai
-from pydantic import BaseModel
-from typing import List
 import json
 from contextlib import contextmanager
 import time
 import concurrent.futures
+
+# モデルのインポート
+from models.scout_models import (
+    AiResult,
+    ResultsContainer,
+    CreatePromptModel,
+    ScoutMaterialModel
+)
+from models.jd_models import (
+    OfferingContentModel,
+    BussinessDescriptionModel
+)
+from models.screening_models import (
+    ScreeningResult,
+)
+# モデルを外部からアクセス可能にする
+__all__ = [
+    # Functions
+    "request_for_create_prompt",
+    "request_with_files_by_parallel",
+    "request_with_files_for_scout_material",
+    "request_business_description",
+    "request_with_files_for_jd",
+    # Models (backward compatibility)
+    "AiResult",
+    "ResultsContainer",
+    "CreatePromptModel",
+    "ScoutMaterialModel",
+    "OfferingContentModel",
+    "BussinessDescriptionModel",
+    "ScreeningResult",
+]
 
 api_key = st.secrets["gemini"]["api_key"]
 model = "gemini-3-pro-preview"
@@ -17,38 +47,6 @@ n_trials = 3
 max_retries = 3
 # リトライ時のAPI問い合わせ間隔
 backoff_seconds = 1.5
-
-class AiResult(BaseModel):
-  """
-  AIの結果を格納するモデル
-  """
-  id: str
-  required_condition: bool
-  welcome_condition: bool
-  evaluation_reason: str
-  evaluation_result: str
-  scout_message: str
-
-class ResultsContainer(BaseModel):
-  """結果全体を格納するコンテナ"""
-  results: List[AiResult]
-
-class CreatePromptModel(BaseModel):
-  common_skill_of_A: str
-  difference_of_ab_and_c: str
-  difference_of_a_and_b: str
-  required_condition: str
-  welcome_condition: str
-
-class ScoutMaterialModel(BaseModel):
-  persona: str
-  category: str
-  industry: str
-  keyword: str
-  income: str
-  desired_income: str
-  scout_title: str
-  scout_body: str
 
 def request_for_create_prompt(prompt, files, job_file, temperature=0.2):
   print("--- 処理開始 ---")
@@ -104,13 +102,13 @@ def request(pdf, job_pdfs, config):
       time.sleep(backoff_seconds)
       # ループが継続され、次の試行が実行される
 
-def request_with_files_by_parallel(prompt, files, job_file, temperature=0.2):
+def request_with_files_by_parallel(prompt, files, job_file, response_model, temperature=0.2):
   print("--- 並列処理開始 ---")
   start_time = time.time()
 
   ## response_schemaの作成
   # PydanticモデルからJSONスキーマを取得
-  response_schema = ResultsContainer.model_json_schema()
+  response_schema = response_model.model_json_schema()
   config = types.GenerateContentConfig(
     system_instruction=prompt,
     # JSON形式での出力を強制
@@ -120,7 +118,7 @@ def request_with_files_by_parallel(prompt, files, job_file, temperature=0.2):
   )
 
   with file_uploader(files, job_file) as (uploaded_files, uploaded_job_files):
-    results = parallel_process_requests(uploaded_files, uploaded_job_files, config)
+    results = parallel_process_requests(uploaded_files, uploaded_job_files, config, response_model)
 
   end_time = time.time()
   print("--- 並列処理終了 ---")
@@ -128,7 +126,7 @@ def request_with_files_by_parallel(prompt, files, job_file, temperature=0.2):
   print(f"results: {results}")
   return results
 
-def parallel_process_requests(pdf_list, job_pdf_list, config):
+def parallel_process_requests(pdf_list, job_pdf_list, config, response_model):
     """
     PDFリストを受け取り、各PDFに対して3回ずつAPIリクエストを並列実行し、
     結果を一つのリストにまとめて返します。
@@ -153,7 +151,7 @@ def parallel_process_requests(pdf_list, job_pdf_list, config):
             pdf_path, attempt_num = future_to_request[future]
             try:
                 response = future.result()
-                result = ResultsContainer.model_validate_json(response.text)
+                result = response_model.model_validate_json(response.text)
                 print(result)
                 results.append(result)
             except Exception as exc:
@@ -190,19 +188,6 @@ def request_with_files_for_scout_material(prompt, files, temperature=0.2):
 # ここからはjd用
 # ＊後で統合すること！！
 # ----------------------------
-class OfferingContentModel(BaseModel):
-  background: str
-  job_category: str
-  required_requirement: str
-  welcome_requirement: str
-  character_statue: str
-
-class BussinessDescriptionModel(BaseModel):
-  company_name: str
-  business_service_name: str
-  company_philosophy: str
-  business_introduction: str
-  business_detail: str
 
 def request_business_description(prompt, temperature):
   print("--- 処理開始 ---")
