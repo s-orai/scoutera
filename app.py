@@ -5,7 +5,7 @@ import streamlit_authenticator as stauth
 import yaml
 from services.scout import main as scout
 from services.jd import main as jd
-
+from services.screening import main as screening
 # secrets.toml から取得
 config = {
     "credentials": yaml.safe_load(st.secrets["auth"]["credentials"])["credentials"],
@@ -51,6 +51,10 @@ def jd_page():
     st.title('求人票作成アシストツール')
     jd.show_jd_create_console()
 
+def screening_page():
+    st.title('書類選考アシストツール')
+    screening.show_screening_console()
+
 def logout_page():
     st.title("ログアウト")
     if st.button("ログアウトする"):
@@ -69,7 +73,7 @@ def main():
         st.title("メニュー")
         st.session_state.page = st.radio(
             "ページ選択",
-            ["スカウト効率化", "求人票作成", "Logout"]
+            ["スカウト効率化", "求人票作成", "書類選考", "Logout"]
         )
 
     # ページ切り替え
@@ -77,6 +81,8 @@ def main():
         scout_page()
     elif st.session_state.page == "求人票作成":
         jd_page()
+    elif st.session_state.page == "書類選考":
+        screening_page()
     elif st.session_state.page == "Logout":
         logout_page()
 
