@@ -1,5 +1,5 @@
 from clients import gemini_client
-from models import ResultsContainer
+from models import ScreeningResultsContainer
 from services.screening import preparation_ai
 from collections import Counter
 import pandas as pd
@@ -14,7 +14,7 @@ def screening(candidate_info, required_condition, welcome_condition, candidate_p
     candidate_pdf_titles.append(original_name)
 
   prompt = preparation_ai.format_prompt(required_condition, welcome_condition, jd_title, candidate_info, candidate_pdf_titles)
-  results = gemini_client.request_with_files_by_parallel(prompt, candidate_pdfs, jd_pdf, ResultsContainer)
+  results = gemini_client.request_with_files_by_parallel_for_screening(prompt, candidate_pdfs, jd_pdf, ScreeningResultsContainer)
 
   finally_result = _get_majority_decision(results)
   data_dicts = finally_result.model_dump()

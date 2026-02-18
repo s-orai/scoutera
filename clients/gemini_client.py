@@ -74,11 +74,16 @@ def request_for_create_prompt(prompt, files, job_file, temperature=0.2):
   print(f"result: {result}")
   return result
 
-def request(pdf, job_pdfs, config):
+def request(pdfs, job_pdfs, config):
   for attempt in range(1, max_retries + 1):
     try:
       # API呼び出し
-      contents = [pdf] + list(job_pdfs)
+      # pdfがリストの場合はそのまま、単一要素の場合はリストでラップ
+      if isinstance(pdfs, list):
+        contents = pdfs + list(job_pdfs)
+      else:
+        contents = [pdfs] + list(job_pdfs)
+
       response = client.models.generate_content(
           model=model,
           contents=contents,
@@ -156,6 +161,66 @@ def parallel_process_requests(pdf_list, job_pdf_list, config, response_model):
                 results.append(result)
             except Exception as exc:
                 print(f"PDF: {pdf_path}, 試行: {attempt_num} の実行中に例外が発生しました: {exc}")
+
+    return results
+
+def request_with_files_by_parallel_for_screening(prompt, files, job_file, response_model, temperature=0.2):
+  print("--- 並列処理開始 ---")
+  start_time = time.time()
+
+  ## response_schemaの作成
+  # PydanticモデルからJSONスキーマを取得
+  response_schema = response_model.model_json_schema()
+  config = types.GenerateContentConfig(
+    system_instruction=prompt,
+    # JSON形式での出力を強制
+    response_mime_type="application/json",
+    response_schema = response_schema,
+    temperature = temperature
+  )
+
+  with file_uploader(files, job_file) as (uploaded_files, uploaded_job_files):
+    results = parallel_process_requests_for_screening(uploaded_files, uploaded_job_files, config, response_model)
+
+  end_time = time.time()
+  print("--- 並列処理終了 ---")
+  print(f"合計実行時間: {end_time - start_time:.2f}秒")
+  print(f"results: {results}")
+  return results
+
+def parallel_process_requests_for_screening(pdf_list, job_pdf, config, response_model):
+    """
+    PDFリスト全体に対して3回APIリクエストを並列実行し、
+    結果を一つのリストにまとめて返します。
+    
+    Args:
+        pdf_list: 候補者PDFのリスト
+        job_pdf: 求人票PDFのリスト
+        config: API設定
+        response_model: レスポンスモデル
+    
+    Returns:
+        List[response_model]: 3回の実行結果のリスト
+    """
+    MAX_WORKERS = 10
+    results = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # PDFリスト全体を3回実行
+        futures = [
+            executor.submit(request, pdf_list, job_pdf, config)
+            for _ in range(3)
+        ]
+
+        for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
+            try:
+                response = future.result()
+                result = response_model.model_validate_json(response.text)
+                print(f"✅ 実行 {i}/3 完了")
+                print(result)
+                results.append(result)
+            except Exception as exc:
+                print(f"❌ 実行 {i}/3 で例外が発生しました: {exc}")
 
     return results
 

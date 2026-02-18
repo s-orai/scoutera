@@ -17,6 +17,7 @@ from models.jd_models import (
 
 from models.screening_models import (
     ScreeningResult,
+    ScreeningResultsContainer,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "BussinessDescriptionModel",
     # Screening models
     "ScreeningResult",
+    "ScreeningResultsContainer",
 ]

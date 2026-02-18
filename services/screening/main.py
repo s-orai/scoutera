@@ -41,13 +41,18 @@ def show_screening_console():
       if not candidate_pdfs and not candidate_info:
         st.error("候補者PDFまたは候補者情報のいずれかを入力してください。")
         return
+      
+      if not jd_pdf:
+        st.error("求人票PDFをアップロードしてください。")
+        return
 
       temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-      for uploaded_file in candidate_pdfs:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-          tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-          temp_file_info.append((tmp_file.name, uploaded_file.name))
-          print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+      if candidate_pdfs:
+        for uploaded_file in candidate_pdfs:
+          with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
+            temp_file_info.append((tmp_file.name, uploaded_file.name))
+            print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
 
       temp_job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
       with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_job_file:
@@ -70,12 +75,13 @@ def show_screening_console():
 
       finally:
         # 4. ローカルの一時ファイルを削除
-        for tmp_pdf_path, _ in temp_file_info:
-          try:
-            os.remove(tmp_pdf_path)
-          except FileNotFoundError:
-            # 何らかの理由で既に削除されている場合はスキップ
-            pass
+        if candidate_pdfs:
+          for tmp_pdf_path, _ in temp_file_info:
+            try:
+              os.remove(tmp_pdf_path)
+            except FileNotFoundError:
+              # 何らかの理由で既に削除されている場合はスキップ
+              pass
         for tmp_job_pdf_path, _ in temp_job_file_info:
           try:
             os.remove(tmp_job_pdf_path)

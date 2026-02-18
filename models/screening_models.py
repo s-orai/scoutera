@@ -13,6 +13,6 @@ class ScreeningResult(BaseModel):
     welcome_condition: bool
     evaluation_result: str
 
-class ResultsContainer(BaseModel):
+class ScreeningResultsContainer(BaseModel):
     """結果全体を格納するコンテナ"""
     results: List[ScreeningResult]
