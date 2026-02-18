@@ -14,7 +14,7 @@ def show_screening_console():
   )
 
   jd_pdf = st.file_uploader(
-    '参考求人票PDFアップロード',
+    '求人票PDFアップロード',
     type=['pdf'],
     accept_multiple_files=False,
   )
