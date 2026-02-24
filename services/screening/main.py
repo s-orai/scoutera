@@ -1,27 +1,27 @@
 import streamlit as st
-import tempfile
 import os
 from services.screening import logic
+from utils import upload_files
 
 def show_screening_console():
 
   candidate_info = st.text_area('候補者情報', placeholder='候補者情報を入力してください')
 
   candidate_pdfs = st.file_uploader(
-    '候補者PDFアップロード',
+    '候補者PDFアップロード_スクリーニング',
     type=['pdf'],
     accept_multiple_files=True,
   )
 
   jd_pdf = st.file_uploader(
-    '求人票PDFアップロード',
+    '求人票PDFアップロード_スクリーニング',
     type=['pdf'],
     accept_multiple_files=False,
   )
 
-  required_condition = st.text_area('必須要件', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
+  required_condition = st.text_area('必須要件_スクリーニング', placeholder='必須要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
-  welcome_condition = st.text_area('歓迎要件', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
+  welcome_condition = st.text_area('歓迎要件_スクリーニング', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
   st.markdown(
     """
@@ -46,19 +46,12 @@ def show_screening_console():
         st.error("求人票PDFをアップロードしてください。")
         return
 
-      temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
+      temp_file_info = []
       if candidate_pdfs:
-        for uploaded_file in candidate_pdfs:
-          with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-            temp_file_info.append((tmp_file.name, uploaded_file.name))
-            print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+        temp_file_info = upload_files(candidate_pdfs)
 
-      temp_job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-      with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_job_file:
-        tmp_job_file.write(jd_pdf.getvalue()) # アップロードされたファイルの内容を書き込む
-        temp_job_file_info.append((tmp_job_file.name, jd_pdf.name))
-        print(f"ファイル書き込み完了 ファイルパス: {tmp_job_file.name}")
+      temp_job_file_info = upload_files(jd_pdf)
+      
       try:
         result = logic.screening(candidate_info, required_condition, welcome_condition, temp_file_info, temp_job_file_info)
         st.header("書類選考結果")
