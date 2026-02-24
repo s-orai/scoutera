@@ -48,6 +48,28 @@ max_retries = 3
 # リトライ時のAPI問い合わせ間隔
 backoff_seconds = 1.5
 
+
+def _execute_with_retry(api_call):
+  """
+  リトライ・バックオフ・例外処理を共通化したAPI実行ヘルパー。
+  api_call は引数なしで呼ばれ、1回分の generate_content のレスポンスを返す callable を渡す。
+  """
+  for attempt in range(1, max_retries + 1):
+    try:
+      response = api_call()
+      return response
+    except json.JSONDecodeError as e:
+      print(f"JSON Parse Error: {str(e)}")
+      print("Invalid JSON content:", response.text if 'response' in locals() else '')
+      raise
+    except Exception as e:
+      if attempt == max_retries:
+        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
+        raise
+      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
+      time.sleep(backoff_seconds)
+
+
 def request_for_create_prompt(prompt, files, job_file, temperature=0.2):
   print("--- 処理開始 ---")
   start_time = time.time()
@@ -75,39 +97,33 @@ def request_for_create_prompt(prompt, files, job_file, temperature=0.2):
   return result
 
 def request(pdfs, job_pdfs, config):
-  for attempt in range(1, max_retries + 1):
-    try:
-      # API呼び出し
-      # pdfがリストの場合はそのまま、単一要素の場合はリストでラップ
-      if isinstance(pdfs, list):
-        contents = pdfs + list(job_pdfs)
-      else:
-        contents = [pdfs] + list(job_pdfs)
+  def _call():
+    if isinstance(pdfs, list):
+      contents = pdfs + list(job_pdfs)
+    else:
+      contents = [pdfs] + list(job_pdfs)
+    return client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config
+    )
+  return _execute_with_retry(_call)
 
-      response = client.models.generate_content(
-          model=model,
-          contents=contents,
-          config=config
-      )
-      return response
-
-    except json.JSONDecodeError as e:
-      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
-      print(f"JSON Parse Error: {str(e)}")
-      print("Invalid JSON content:", response.text if 'response' in locals() else '')
-      raise
-
-    except Exception as e:
-      # 最後の試行の場合は例外を再発生
-      if attempt == max_retries:
-        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
-        raise
-
-      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
-      time.sleep(backoff_seconds)
-      # ループが継続され、次の試行が実行される
-
-def request_with_files_by_parallel(prompt, files, job_file, response_model, temperature=0.2):
+def request_with_files_by_parallel(prompt, files, job_file, response_model, temperature=0.2, is_screening=False):
+  """
+  PDFファイルに対してGemini APIリクエストを並列実行する
+  
+  Args:
+      prompt: システムプロンプト
+      files: 候補者PDFファイルのリスト
+      job_file: 求人票PDFファイル
+      response_model: レスポンスのPydanticモデル
+      temperature: 温度パラメータ
+      is_screening: Trueの場合はscreeningモード（全体を3回実行）、Falseの場合はscoutモード（各PDFを3回ずつ実行）
+  
+  Returns:
+      処理結果のリスト
+  """
   print("--- 並列処理開始 ---")
   start_time = time.time()
 
@@ -123,7 +139,10 @@ def request_with_files_by_parallel(prompt, files, job_file, response_model, temp
   )
 
   with file_uploader(files, job_file) as (uploaded_files, uploaded_job_files):
-    results = parallel_process_requests(uploaded_files, uploaded_job_files, config, response_model)
+    if is_screening:
+      results = _parallel_process_for_screening(uploaded_files, uploaded_job_files, config, response_model)
+    else:
+      results = _parallel_process_for_scout(uploaded_files, uploaded_job_files, config, response_model)
 
   end_time = time.time()
   print("--- 並列処理終了 ---")
@@ -131,9 +150,9 @@ def request_with_files_by_parallel(prompt, files, job_file, response_model, temp
   print(f"results: {results}")
   return results
 
-def parallel_process_requests(pdf_list, job_pdf_list, config, response_model):
+def _parallel_process_for_scout(pdf_list, job_pdf_list, config, response_model):
     """
-    PDFリストを受け取り、各PDFに対して3回ずつAPIリクエストを並列実行し、
+    Scout用: PDFリストを受け取り、各PDFに対して3回ずつAPIリクエストを並列実行し、
     結果を一つのリストにまとめて返します。
     """
     all_requests = [
@@ -147,8 +166,7 @@ def parallel_process_requests(pdf_list, job_pdf_list, config, response_model):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_request = {
-            executor.submit(request, pdf_path, job_pdf_list, config):
-            (pdf_path, attempt_num)
+            executor.submit(request, pdf_path, job_pdf_list, config): (pdf_path, attempt_num)
             for pdf_path, attempt_num in all_requests
         }
 
@@ -164,33 +182,9 @@ def parallel_process_requests(pdf_list, job_pdf_list, config, response_model):
 
     return results
 
-def request_with_files_by_parallel_for_screening(prompt, files, job_file, response_model, temperature=0.2):
-  print("--- 並列処理開始 ---")
-  start_time = time.time()
-
-  ## response_schemaの作成
-  # PydanticモデルからJSONスキーマを取得
-  response_schema = response_model.model_json_schema()
-  config = types.GenerateContentConfig(
-    system_instruction=prompt,
-    # JSON形式での出力を強制
-    response_mime_type="application/json",
-    response_schema = response_schema,
-    temperature = temperature
-  )
-
-  with file_uploader(files, job_file) as (uploaded_files, uploaded_job_files):
-    results = parallel_process_requests_for_screening(uploaded_files, uploaded_job_files, config, response_model)
-
-  end_time = time.time()
-  print("--- 並列処理終了 ---")
-  print(f"合計実行時間: {end_time - start_time:.2f}秒")
-  print(f"results: {results}")
-  return results
-
-def parallel_process_requests_for_screening(pdf_list, job_pdf, config, response_model):
+def _parallel_process_for_screening(pdf_list, job_pdf, config, response_model):
     """
-    PDFリスト全体に対して3回APIリクエストを並列実行し、
+    Screening用: PDFリスト全体に対して3回APIリクエストを並列実行し、
     結果を一つのリストにまとめて返します。
     
     Args:
@@ -301,62 +295,24 @@ def request_with_files_for_jd(prompt, files, temperature):
   return result
 
 def _request_only_config(config, prompt):
-  for attempt in range(1, max_retries + 1):
-    try:
-      # API呼び出し
-      response = client.models.generate_content(
+  return _execute_with_retry(
+      lambda: client.models.generate_content(
           model=model,
           config=config,
           contents=[prompt]
       )
-      return response
-
-    except json.JSONDecodeError as e:
-      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
-      print(f"JSON Parse Error: {str(e)}")
-      print("Invalid JSON content:", response.text if 'response' in locals() else '')
-      raise
-
-    except Exception as e:
-      # 最後の試行の場合は例外を再発生
-      if attempt == max_retries:
-        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
-        raise
-
-      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
-      time.sleep(backoff_seconds)
-      # ループが継続され、次の試行が実行される
+  )
 
 def _request(pdfs, config):
-  for attempt in range(1, max_retries + 1):
-    try:
-      # API呼び出し
-      contents = pdfs
-      response = client.models.generate_content(
+  return _execute_with_retry(
+      lambda: client.models.generate_content(
           model=model,
-          contents=contents,
+          contents=pdfs,
           config=config
       )
-      return response
-
-    except json.JSONDecodeError as e:
-      # JSONパースエラーはリトライしても解決しないため、即座に例外を再発生
-      print(f"JSON Parse Error: {str(e)}")
-      print("Invalid JSON content:", response.text if 'response' in locals() else '')
-      raise
-
-    except Exception as e:
-      # 最後の試行の場合は例外を再発生
-      if attempt == max_retries:
-        print(f"❌ Gemini APIの実行中にエラーが発生しました (attempt {attempt}/{max_retries}): {e}")
-        raise
-
-      print(f"⚠️ Gemini APIエラー (attempt {attempt}/{max_retries}): {e} - {backoff_seconds}秒待機後にリトライします")
-      time.sleep(backoff_seconds)
-      # ループが継続され、次の試行が実行される
-
+  )
 # ----------------------------
-# 共通関数
+# 共通関数（ファイルアップロード）
 # ----------------------------
 @contextmanager
 def file_uploader(files, job_file, is_round: bool = False):
