@@ -1,7 +1,6 @@
-import re
 from clients import gemini_client
 from models.scout_models import ResultsContainer
-from collections import defaultdict, Counter
+from utils import get_majority_decision_by_id
 
 def format_prompt(required_condition, welcome_condition, job_title):
   return f"""
@@ -88,47 +87,8 @@ def create_list_by_gemini(pdfs, required_condition, welcome_condition, job_pdf):
     ResultsContainer
   )
 
-  finally_results = get_majority_decision(results)
+  finally_results = get_majority_decision_by_id(results)
   return finally_results
-
-
-def extract_numeric_id(id: str) -> str:
-  # 数字のみかチェック
-  if id.isdigit():
-    return id
-  
-  # BUで始まる場合はそのまま返す（抽出処理をスキップ）
-  if id.startswith("BU"):
-    return id
-  
-  # 数字以外が含まれている場合は数字のみを抽出
-  numeric_only = re.sub(r'\D', '', id)
-  return numeric_only
-
-
-def get_majority_decision(ai_results):
-  results_by_id = defaultdict(list)
-  for inquiry in ai_results:
-    for record in inquiry.results:
-      # IDから数字のみを抽出
-      numeric_id = extract_numeric_id(record.id)
-      results_by_id[numeric_id].append(record)
-
-  final_majority_results = []
-  for id, records in results_by_id.items():
-    counts = Counter(record.evaluation_result for record in records)
-    majority_result = counts.most_common(1)[0][0] if counts else "N/A"
-
-    majority_record = next(
-      (record for record in records if record.evaluation_result == majority_result),
-      None
-    )
-    if majority_record:
-      final_majority_results.append(majority_record)
-
-    print(f"ID: **{id}** の多数決結果: **{majority_result}**")
-
-  return final_majority_results
 
 def format_prompt_for_scout_material(pdf_title):
   return f"""
