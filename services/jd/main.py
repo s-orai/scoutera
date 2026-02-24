@@ -1,7 +1,7 @@
 import streamlit as st
-import tempfile
 import os
 from services.jd import logic
+from utils import upload_files
 
 def show_jd_create_console():
   tab1, tab2= st.tabs(["求人票作成", "会社・事業説明"])
@@ -38,12 +38,7 @@ def show_jd_create_console():
           st.error("参考求人票PDFをアップロードしてください。")
           return
 
-        temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        for uploaded_file in jd_pdfs:
-          with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-            temp_file_info.append((tmp_file.name, uploaded_file.name))
-            print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+        temp_file_info = upload_files(jd_pdfs)
 
         try:
           res = logic.create_jd(company_info, hearing_info, temp_file_info, temperature)
@@ -108,13 +103,3 @@ def show_jd_create_console():
           st.code(res_company_info['business_detail'], language=None)
         except Exception as e:
           st.write(f"エラーが発生しました。{e}")
-
-def uploade_file(pdfs):
-  file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-  for uploaded_file in pdfs:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-      tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-      file_info.append((tmp_file.name, uploaded_file.name))
-      print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
-  
-  return file_info

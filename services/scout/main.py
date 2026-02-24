@@ -1,7 +1,7 @@
 import streamlit as st
-import tempfile
 import os
 from services.scout import logic
+from utils import upload_files
 
 def show_search_console():
   tab1, tab2, tab3 = st.tabs(["候補者ピックアップ", "プロンプト作成", "スカウト素材出力"])
@@ -38,18 +38,8 @@ def show_search_console():
           st.error("候補者PDFと求人票PDFの両方をアップロードしてください。")
           return
 
-        temp_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        for uploaded_file in pdfs:
-          with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-            temp_file_info.append((tmp_file.name, uploaded_file.name))
-            print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
-
-        temp_job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_job_file:
-          tmp_job_file.write(job_pdf.getvalue()) # アップロードされたファイルの内容を書き込む
-          temp_job_file_info.append((tmp_job_file.name, job_pdf.name))
-          print(f"ファイル書き込み完了 ファイルパス: {tmp_job_file.name}")
+        temp_file_info = upload_files(pdfs)
+        temp_job_file_info = upload_files(job_pdf)
 
         try:
           spreadsheet_url = logic.main(required_condition, welcome_condition, temp_file_info, temp_job_file_info)
@@ -93,15 +83,10 @@ def show_search_console():
           st.error("評価コメントを入力してください。")
           return
 
-        pdfs_A_info = uploade_file(pdfs_A)
-        pdfs_B_info = uploade_file(pdfs_B)
-        pdfs_C_info = uploade_file(pdfs_C)
-
-        job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-          tmp_file.write(job_pdf.getvalue()) # アップロードされたファイルの内容を書き込む
-          job_file_info.append((tmp_file.name, job_pdf.name))
-          print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+        pdfs_A_info = upload_files(pdfs_A)
+        pdfs_B_info = upload_files(pdfs_B)
+        pdfs_C_info = upload_files(pdfs_C)
+        job_file_info = upload_files(job_pdf)
 
         try:
           spreadsheet_url = logic.create_prompt(pdfs_A_info, pdfs_B_info, pdfs_C_info, comment_B, comment_C, job_file_info)
@@ -145,11 +130,7 @@ def show_search_console():
           st.error("スカウト素材PDFをアップロードしてください。")
           return
 
-        job_file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-          tmp_file.write(pdf.getvalue()) # アップロードされたファイルの内容を書き込む
-          job_file_info.append((tmp_file.name, pdf.name))
-          print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
+        job_file_info = upload_files(pdf)
 
         try:
           spreadsheet_url = logic.create_scout_material(job_file_info)
@@ -162,13 +143,3 @@ def show_search_console():
             except FileNotFoundError:
               # 何らかの理由で既に削除されている場合はスキップ
               pass
-
-def uploade_file(pdfs):
-  file_info = [] # [(一時パス, オリジナルファイル名), ...] を格納
-  for uploaded_file in pdfs:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-      tmp_file.write(uploaded_file.getvalue()) # アップロードされたファイルの内容を書き込む
-      file_info.append((tmp_file.name, uploaded_file.name))
-      print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
-  
-  return file_info
