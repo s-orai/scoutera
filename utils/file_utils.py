@@ -2,6 +2,7 @@
 共通ユーティリティ関数
 """
 
+import os
 import tempfile
 
 
@@ -37,3 +38,26 @@ def upload_files(files):
             print(f"ファイル書き込み完了 ファイルパス: {tmp_file.name}")
     
     return file_info
+
+
+def cleanup_temp_files(file_info: list[tuple[str, str]]) -> None:
+    """
+    upload_files が返す形式の一時ファイル一覧を削除する。
+    各パスに対して os.remove を試み、FileNotFoundError は無視する。
+
+    Args:
+        file_info: [(一時パス, オリジナルファイル名), ...] のリスト。
+                   空リストの場合は何もしない。
+
+    Examples:
+        temp_file_info = upload_files(pdfs)
+        try:
+            ...
+        finally:
+            cleanup_temp_files(temp_file_info)
+    """
+    for path, _ in file_info:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass

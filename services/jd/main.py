@@ -1,7 +1,6 @@
 import streamlit as st
-import os
 from services.jd import logic
-from utils import upload_files
+from utils import upload_files, cleanup_temp_files
 
 def show_jd_create_console():
   tab1, tab2= st.tabs(["求人票作成", "会社・事業説明"])
@@ -56,13 +55,7 @@ def show_jd_create_console():
           st.subheader("求める人物像", divider=True)
           st.code(res['character_statue'], language=None)
         finally:
-          # 4. ローカルの一時ファイルを削除
-          for tmp_pdf_path, _ in temp_file_info:
-            try:
-              os.remove(tmp_pdf_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
+          cleanup_temp_files(temp_file_info)
 
   with tab2:
     company_info2 = st.text_area('会社情報2', placeholder='会社情報を入力してください')

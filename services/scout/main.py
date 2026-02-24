@@ -1,7 +1,6 @@
 import streamlit as st
-import os
 from services.scout import logic
-from utils import upload_files
+from utils import upload_files, cleanup_temp_files
 
 def show_search_console():
   tab1, tab2, tab3 = st.tabs(["候補者ピックアップ", "プロンプト作成", "スカウト素材出力"])
@@ -45,19 +44,8 @@ def show_search_console():
           spreadsheet_url = logic.main(required_condition, welcome_condition, temp_file_info, temp_job_file_info)
           st.write(f"作成したシート：{spreadsheet_url}")
         finally:
-          # 4. ローカルの一時ファイルを削除
-          for tmp_pdf_path, _ in temp_file_info:
-            try:
-              os.remove(tmp_pdf_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
-
-          for tmp_job_pdf_path, _ in temp_job_file_info:
-            try:
-              os.remove(tmp_job_pdf_path)
-            except FileNotFoundError:
-              pass
+          cleanup_temp_files(temp_file_info)
+          cleanup_temp_files(temp_job_file_info)
 
   with tab2:
     pdfs_A = st.file_uploader('A評価された候補者PDFアップロード', type=['pdf'], accept_multiple_files=True)
@@ -92,41 +80,17 @@ def show_search_console():
           spreadsheet_url = logic.create_prompt(pdfs_A_info, pdfs_B_info, pdfs_C_info, comment_B, comment_C, job_file_info)
           st.write(f"作成したシート：{spreadsheet_url}")
         finally:
-          # 4. ローカルの一時ファイルを削除
-          for tmp_pdfA_path, _ in pdfs_A_info:
-            try:
-              os.remove(tmp_pdfA_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
-
-          for tmp_pdfB_path, _ in pdfs_B_info:
-            try:
-              os.remove(tmp_pdfB_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
-
-          for tmp_pdfC_path, _ in pdfs_C_info:
-            try:
-              os.remove(tmp_pdfC_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
-
-          for tmp_job_pdf_path, _ in job_file_info:
-            try:
-              os.remove(tmp_job_pdf_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
+          cleanup_temp_files(pdfs_A_info)
+          cleanup_temp_files(pdfs_B_info)
+          cleanup_temp_files(pdfs_C_info)
+          cleanup_temp_files(job_file_info)
 
   with tab3:
     pdf = st.file_uploader('求人票PDFアップロード_スカウト素材出力', type=['pdf'], accept_multiple_files=False)
 
     if st.button('スカウト素材出力開始'):
       with st.spinner('処理中です.....'):
-        if pdfs is None:
+        if pdf is None:
           st.error("スカウト素材PDFをアップロードしてください。")
           return
 
@@ -136,10 +100,4 @@ def show_search_console():
           spreadsheet_url = logic.create_scout_material(job_file_info)
           st.write(f"作成したシート：{spreadsheet_url}")
         finally:
-          # 4. ローカルの一時ファイルを削除
-          for job_file_path, _ in job_file_info:
-            try:
-              os.remove(job_file_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
+          cleanup_temp_files(job_file_info)

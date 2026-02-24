@@ -1,7 +1,6 @@
 import streamlit as st
-import os
 from services.screening import logic
-from utils import upload_files
+from utils import upload_files, cleanup_temp_files
 
 def show_screening_console():
 
@@ -67,16 +66,6 @@ def show_screening_console():
         st.write(f"エラーが発生しました。{e}")
 
       finally:
-        # 4. ローカルの一時ファイルを削除
         if candidate_pdfs:
-          for tmp_pdf_path, _ in temp_file_info:
-            try:
-              os.remove(tmp_pdf_path)
-            except FileNotFoundError:
-              # 何らかの理由で既に削除されている場合はスキップ
-              pass
-        for tmp_job_pdf_path, _ in temp_job_file_info:
-          try:
-            os.remove(tmp_job_pdf_path)
-          except FileNotFoundError:
-            pass
+          cleanup_temp_files(temp_file_info)
+        cleanup_temp_files(temp_job_file_info)
