@@ -1,20 +1,12 @@
+"""
+Web/HTTP系の共通ユーティリティ
+"""
+
 import re
+
 import requests
 from bs4 import BeautifulSoup
 
-from services.jd.prompts import PROMPT_BUSINESS_DESCRIPTION, PROMPT_JD
-
-
-def format_prompt_for_business_description(company_info):
-  return PROMPT_BUSINESS_DESCRIPTION.format(company_info=company_info)
-
-
-def format_prompt_for_jd(company_info, hearing_info, jd_title):
-  return PROMPT_JD.format(
-    company_info=company_info,
-    hearing_info=hearing_info,
-    jd_title=jd_title,
-  )
 
 def scrape_page_text(url: str, timeout: int = 10) -> str:
     """
@@ -61,3 +53,4 @@ def scrape_page_text(url: str, timeout: int = 10) -> str:
     cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
 
     return cleaned_text
+

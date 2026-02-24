@@ -1,8 +1,22 @@
 from clients import gemini_client
 from models import ScreeningResultsContainer
-from services.screening import preparation_ai
+from services.screening.prompts import PROMPT_SCREENING
 from utils import get_majority_decision_single
 import pandas as pd
+
+
+def _format_prompt(required_condition, welcome_condition, jd_title, candidate_info="", candidate_titles=None):
+  if candidate_titles is None:
+    candidate_titles = []
+  candidate_titles_str = ", ".join(candidate_titles)
+  return PROMPT_SCREENING.format(
+    required_condition=required_condition,
+    welcome_condition=welcome_condition,
+    jd_title=jd_title,
+    candidate_info=candidate_info,
+    candidate_titles_str=candidate_titles_str,
+  )
+
 
 def screening(candidate_info, required_condition, welcome_condition, candidate_pdfs, jd_pdf):
 
@@ -13,7 +27,7 @@ def screening(candidate_info, required_condition, welcome_condition, candidate_p
   for _, original_name in candidate_pdfs:
     candidate_pdf_titles.append(original_name)
 
-  prompt = preparation_ai.format_prompt(required_condition, welcome_condition, jd_title, candidate_info, candidate_pdf_titles)
+  prompt = _format_prompt(required_condition, welcome_condition, jd_title, candidate_info, candidate_pdf_titles)
   results = gemini_client.request_with_files_by_parallel(
     prompt, 
     candidate_pdfs, 

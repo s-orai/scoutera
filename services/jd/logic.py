@@ -2,7 +2,8 @@ import streamlit as st
 from clients import google_client
 from clients import gemini_client
 from clients import openai_client
-from services.jd import preparation_ai
+from services.jd.prompts import PROMPT_BUSINESS_DESCRIPTION, PROMPT_JD
+from utils import scrape_page_text
 import tempfile
 import re
 import ffmpeg
@@ -18,6 +19,18 @@ google_cli = google_client.GoogleClient()
 openai_cli = openai_client.OpenAIClient()
 
 
+def _format_prompt_for_business_description(company_info):
+  return PROMPT_BUSINESS_DESCRIPTION.format(company_info=company_info)
+
+
+def _format_prompt_for_jd(company_info, hearing_info, jd_title):
+  return PROMPT_JD.format(
+    company_info=company_info,
+    hearing_info=hearing_info,
+    jd_title=jd_title,
+  )
+
+
 def create_business_description(url, temperature):
   # URLが複数ある場合（改行区切り）に対応
   urls = [u.strip() for u in url.split('\n') if u.strip()]
@@ -26,7 +39,7 @@ def create_business_description(url, temperature):
   company_info_parts = []
   for single_url in urls:
     try:
-      scraped_text = preparation_ai.scrape_page_text(single_url)
+      scraped_text = scrape_page_text(single_url)
       if scraped_text:
         company_info_parts.append(f"=== {single_url} ===\n{scraped_text}")
     except Exception as e:
@@ -36,7 +49,7 @@ def create_business_description(url, temperature):
   # すべてのテキストを結合
   company_info = "\n\n".join(company_info_parts)
   
-  prompt = preparation_ai.format_prompt_for_business_description(company_info)
+  prompt = _format_prompt_for_business_description(company_info)
   result = gemini_client.request_business_description(prompt, temperature)
   data_dicts = result.model_dump()
   df = pd.DataFrame([data_dicts])
@@ -57,7 +70,7 @@ def create_jd(url, hearing_info, jd_pdfs, temperature):
   company_info_parts = []
   for single_url in urls:
     try:
-      scraped_text = preparation_ai.scrape_page_text(single_url)
+      scraped_text = scrape_page_text(single_url)
       if scraped_text:
         company_info_parts.append(f"=== {single_url} ===\n{scraped_text}")
     except Exception as e:
@@ -67,7 +80,7 @@ def create_jd(url, hearing_info, jd_pdfs, temperature):
   # すべてのテキストを結合
   company_info = "\n\n".join(company_info_parts)
 
-  prompt = preparation_ai.format_prompt_for_jd(company_info, hearing_info, jd_titles)
+  prompt = _format_prompt_for_jd(company_info, hearing_info, jd_titles)
 
   result = gemini_client.request_with_files_for_jd(prompt, jd_pdfs, temperature)
   data_dicts = result.model_dump()
