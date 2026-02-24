@@ -233,7 +233,7 @@ def request_with_files_for_scout_material(prompt, files, temperature=0.2):
     temperature = temperature
   )
 
-  with _file_uploader(files) as uploaded_files:
+  with file_uploader(files, []) as (uploaded_files, _):
     response = _request(uploaded_files, config)
 
   end_time = time.time()
@@ -284,7 +284,7 @@ def request_with_files_for_jd(prompt, files, temperature):
     temperature = temperature
   )
 
-  with _file_uploader(files) as uploaded_files:
+  with file_uploader(files, []) as (uploaded_files, _):
     response = _request(uploaded_files, config)
 
   end_time = time.time()
@@ -315,11 +315,17 @@ def _request(pdfs, config):
 # 共通関数（ファイルアップロード）
 # ----------------------------
 @contextmanager
-def file_uploader(files, job_file, is_round: bool = False):
+def file_uploader(files, job_file=None, is_round: bool = False):
     """
-    ファイルをGemini APIにアップロードし、ファイル名を 'with' ブロックに提供します。
-    ブロック終了時に、成功・失敗に関わらず必ずファイルを削除します。
+    ファイルをGemini APIにアップロードし、'with' ブロックに (uploaded_files, uploaded_job_files) を提供します。
+    ブロック終了時に、成功・失敗に関わらず必ずアップロードしたファイルを削除します。
+
+    Args:
+        files: [(ローカルパス, オリジナルファイル名), ...] のリスト（候補者用など）
+        job_file: 求人票用の [(パス, 名前), ...]。省略時は空リストとして扱う（候補者のみアップロード）
+        is_round: True のときは (uploaded_files + uploaded_job_files) を1つのリストで yield
     """
+    job_file = job_file if job_file is not None else []
     uploaded_files = []
     uploaded_job_files = []
     try:
@@ -340,47 +346,11 @@ def file_uploader(files, job_file, is_round: bool = False):
         yield uploaded_files
 
     except Exception as e:
-        # アップロードまたは 'with' ブロック内の処理で例外が発生した場合
         print(f"Error during file processing: {e}")
-        raise # 例外を呼び出し元に再スロー
+        raise
 
     finally:
-      ## 5. アップロードしたファイルの削除 (Gemini Filesから)
       for uploaded in uploaded_files + uploaded_job_files:
-        try:
-          print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded.name}) を削除します。")
-          client.files.delete(name=uploaded.name)
-          print("✅ 削除完了。")
-        except Exception as delete_error:
-          print(f"⚠️ ファイル削除に失敗しました: {delete_error}")
-
-@contextmanager
-def _file_uploader(files):
-    """
-    ファイルをGemini APIにアップロードし、ファイル名を 'with' ブロックに提供します。
-    ブロック終了時に、成功・失敗に関わらず必ずファイルを削除します。
-    """
-    uploaded_files = []
-    try:
-      for path, original_name in files:
-        uploaded = client.files.upload(file=path)
-        uploaded_files.append(uploaded)
-        print(f"  アップロード: {original_name}")
-
-      # 1ファイルの場合は単体で、複数の場合はリストで渡す
-      if len(uploaded_files) == 1:
-        yield uploaded_files[0]
-      else:
-        yield uploaded_files
-
-    except Exception as e:
-        # アップロードまたは 'with' ブロック内の処理で例外が発生した場合
-        print(f"Error during file processing: {e}")
-        raise # 例外を呼び出し元に再スロー
-
-    finally:
-      ## 5. アップロードしたファイルの削除 (Gemini Filesから)
-      for uploaded in uploaded_files:
         try:
           print(f"🗑️ Gemini Filesからアップロードしたファイル ({uploaded.name}) を削除します。")
           client.files.delete(name=uploaded.name)
