@@ -1,6 +1,6 @@
 import streamlit as st
 from services.screening import logic
-from utils import upload_files, cleanup_temp_files
+from utils import upload_files, cleanup_temp_files, inject_code_block_style, show_code_sections
 
 def show_screening_console():
 
@@ -22,17 +22,7 @@ def show_screening_console():
 
   welcome_condition = st.text_area('歓迎要件_スクリーニング', placeholder='歓迎要件を入力してください、入力内容がそのままプロンプトに反映されるので、箇条書きが好ましいです')
 
-  st.markdown(
-    """
-    <style>
-    pre code {
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-  )
+  inject_code_block_style()
 
   if st.button('開始'):
     with st.spinner('処理中です.....'):
@@ -53,15 +43,15 @@ def show_screening_console():
       
       try:
         result = logic.screening(candidate_info, required_condition, welcome_condition, temp_file_info, temp_job_file_info)
-        st.header("書類選考結果")
-        st.subheader("評価理由", divider=True)
-        st.code(result['evaluation_reason'], language=None)
-        st.subheader("必須要件", divider=True)
-        st.code(result['required_condition'], language=None)
-        st.subheader("歓迎要件", divider=True)
-        st.code(result['welcome_condition'], language=None)
-        st.subheader("評価結果", divider=True)
-        st.code(result['evaluation_result'], language=None)
+        show_code_sections(
+          {
+            "評価理由": result["evaluation_reason"],
+            "必須要件": result["required_condition"],
+            "歓迎要件": result["welcome_condition"],
+            "評価結果": result["evaluation_result"],
+          },
+          main_title="書類選考結果",
+        )
       except Exception as e:
         st.write(f"エラーが発生しました。{e}")
 

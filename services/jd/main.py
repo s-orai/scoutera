@@ -1,6 +1,6 @@
 import streamlit as st
 from services.jd import logic
-from utils import upload_files, cleanup_temp_files
+from utils import upload_files, cleanup_temp_files, inject_code_block_style, show_code_sections
 
 def show_jd_create_console():
   tab1, tab2= st.tabs(["求人票作成", "会社・事業説明"])
@@ -18,17 +18,7 @@ def show_jd_create_console():
 
     temperature = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
-    st.markdown(
-      """
-      <style>
-      pre code {
-          white-space: pre-wrap !important;
-          word-break: break-word !important;
-      }
-      </style>
-      """,
-      unsafe_allow_html=True
-    )
+    inject_code_block_style()
 
     if st.button('開始'):
       with st.spinner('処理中です.....'):
@@ -41,19 +31,17 @@ def show_jd_create_console():
 
         try:
           res = logic.create_jd(company_info, hearing_info, temp_file_info, temperature)
-          st.header("作成した募集要項")
-          st.subheader("募集背景", divider=True)
-          st.code(res['background'], language=None)
-          st.subheader("募集職種", divider=True)
-          st.code(res['job_category'], language=None)
-          st.subheader("仕事内容", divider=True)
-          st.code(res['job_content'], language=None)
-          st.subheader("必須要件", divider=True)
-          st.code(res['required_requirement'], language=None)
-          st.subheader("歓迎要件", divider=True)
-          st.code(res['welcome_requirement'], language=None)
-          st.subheader("求める人物像", divider=True)
-          st.code(res['character_statue'], language=None)
+          show_code_sections(
+            {
+              "募集背景": res["background"],
+              "募集職種": res["job_category"],
+              "仕事内容": res["job_content"],
+              "必須要件": res["required_requirement"],
+              "歓迎要件": res["welcome_requirement"],
+              "求める人物像": res["character_statue"],
+            },
+            main_title="作成した募集要項",
+          )
         finally:
           cleanup_temp_files(temp_file_info)
 
@@ -62,17 +50,7 @@ def show_jd_create_console():
 
     temperature_jd = st.number_input('temperature_jd', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
 
-    st.markdown(
-      """
-      <style>
-      pre code {
-          white-space: pre-wrap !important;
-          word-break: break-word !important;
-      }
-      </style>
-      """,
-      unsafe_allow_html=True
-    )
+    inject_code_block_style()
 
     if st.button('作成開始(Gemini)'):
       with st.spinner('処理中です.....'):
@@ -83,16 +61,15 @@ def show_jd_create_console():
 
         try:
           res_company_info = logic.create_business_description(company_info2, temperature_jd)
-          st.header("作成した会社・事業説明")
-          st.subheader("会社名", divider=True)
-          st.code(res_company_info['company_name'], language=None)
-          st.subheader("事業サービス名", divider=True)
-          st.code(res_company_info['business_service_name'], language=None)
-          st.subheader("企業理念", divider=True)
-          st.code(res_company_info['company_philosophy'], language=None)
-          st.subheader("事業紹介", divider=True)
-          st.code(res_company_info['business_introduction'], language=None)
-          st.subheader("事業の詳細", divider=True)
-          st.code(res_company_info['business_detail'], language=None)
+          show_code_sections(
+            {
+              "会社名": res_company_info["company_name"],
+              "事業サービス名": res_company_info["business_service_name"],
+              "企業理念": res_company_info["company_philosophy"],
+              "事業紹介": res_company_info["business_introduction"],
+              "事業の詳細": res_company_info["business_detail"],
+            },
+            main_title="作成した会社・事業説明",
+          )
         except Exception as e:
           st.write(f"エラーが発生しました。{e}")
