@@ -48,7 +48,7 @@ def show_jd_create_console():
 
     inject_code_block_style()
 
-    if st.button('作成開始(Gemini)'):
+    if st.button('作成開始'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
         if company_info2 is None:
