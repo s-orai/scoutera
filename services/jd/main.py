@@ -16,8 +16,6 @@ def show_jd_create_console():
       accept_multiple_files=True,
     )
 
-    temperature = st.number_input('temperature_cp', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
-
     inject_code_block_style()
 
     if st.button('開始'):
@@ -30,7 +28,7 @@ def show_jd_create_console():
         temp_file_info = upload_files(jd_pdfs)
 
         try:
-          res = logic.create_jd(company_info, hearing_info, temp_file_info, temperature)
+          res = logic.create_jd(company_info, hearing_info, temp_file_info)
           show_code_sections(
             {
               "募集背景": res["background"],
@@ -48,8 +46,6 @@ def show_jd_create_console():
   with tab2:
     company_info2 = st.text_area('会社情報2', placeholder='会社情報を入力してください')
 
-    temperature_jd = st.number_input('temperature_jd', min_value = 0.0, max_value = 2.10, value = 0.5, step = 0.1)
-
     inject_code_block_style()
 
     if st.button('作成開始(Gemini)'):
@@ -60,7 +56,7 @@ def show_jd_create_console():
           return
 
         try:
-          res_company_info = logic.create_business_description(company_info2, temperature_jd)
+          res_company_info = logic.create_business_description(company_info2)
           show_code_sections(
             {
               "会社名": res_company_info["company_name"],

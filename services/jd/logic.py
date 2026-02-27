@@ -33,7 +33,7 @@ def _format_prompt_for_jd(company_info, hearing_info, jd_title):
   )
 
 
-def create_business_description(url, temperature):
+def create_business_description(url, temperature=0.4):
   # URLが複数ある場合（改行区切り）に対応
   urls = [u.strip() for u in url.split('\n') if u.strip()]
   
@@ -59,7 +59,7 @@ def create_business_description(url, temperature):
   return df.iloc[0]
 
 
-def create_jd(url, hearing_info, jd_pdfs, temperature):
+def create_jd(url, hearing_info, jd_pdfs, temperature=0.3):
 
   jd_titles = []
   for _, original_name in jd_pdfs:
