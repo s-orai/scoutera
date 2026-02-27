@@ -3,11 +3,12 @@ import pandas as pd
 from services.scout import create_prompt_logic
 from clients import google_client
 from clients import gemini_client
-import streamlit as st
+from config import get_google_config
 
-scout_folder_id = st.secrets["google"]["scout_folder_id"]
-create_prompt_folder_id = st.secrets["google"]["create_prompt_folder_id"]
-scout_material_folder_id = st.secrets["google"]["scout_material_folder_id"]
+_google_config = get_google_config()
+scout_folder_id = _google_config["scout_folder_id"]
+create_prompt_folder_id = _google_config["create_prompt_folder_id"]
+scout_material_folder_id = _google_config["scout_material_folder_id"]
 
 # スプレッドシートへエクスポート
 def export_to_spredsheet(df, folder_id):

@@ -1,11 +1,14 @@
 import datetime
-import streamlit as st
+import os
+
 import gspread
 from gspread_dataframe import set_with_dataframe
-from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-import os
+
+from config import get_google_config
+
 
 class GoogleClient:
 
@@ -13,12 +16,14 @@ class GoogleClient:
         "https://www.googleapis.com/auth/drive",
         "https://www.googleapis.com/auth/spreadsheets"
     ]
-    jd_spreadsheet_id = st.secrets["google"]["jd_spreadsheet_id"]
 
     def __init__(self) -> None:
+        google_config = get_google_config()
+        self.jd_spreadsheet_id = google_config["jd_spreadsheet_id"]
+
         # サービスアカウント認証
         self.credentials = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"], scopes=self.SCOPES
+            google_config["gcp_service_account"], scopes=self.SCOPES
         )
 
         # Drive API クライアント作成
@@ -29,7 +34,7 @@ class GoogleClient:
 
         # jd用サービスアカウント認証
         self.jd_credentials = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account_jd"], scopes=self.SCOPES
+            google_config["gcp_service_account_jd"], scopes=self.SCOPES
         )
 
         # jd用Drive API クライアント作成

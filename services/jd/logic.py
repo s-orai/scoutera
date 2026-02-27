@@ -2,6 +2,7 @@ import streamlit as st
 from clients import google_client
 from clients import gemini_client
 from clients import openai_client
+from config import get_google_config
 from services.jd.prompts import PROMPT_BUSINESS_DESCRIPTION, PROMPT_JD
 from utils import scrape_page_text
 import tempfile
@@ -11,9 +12,10 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 
-scout_folder_id = st.secrets["google"]["scout_folder_id"]
-create_prompt_folder_id = st.secrets["google"]["create_prompt_folder_id"]
-jd_spreadsheet_id = st.secrets["google"]["jd_spreadsheet_id"]
+_google_config = get_google_config()
+scout_folder_id = _google_config["scout_folder_id"]
+create_prompt_folder_id = _google_config["create_prompt_folder_id"]
+jd_spreadsheet_id = _google_config["jd_spreadsheet_id"]
 
 google_cli = google_client.GoogleClient()
 openai_cli = openai_client.OpenAIClient()

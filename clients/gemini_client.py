@@ -1,11 +1,11 @@
 from google.genai import types
-import streamlit as st
 from google import genai
 import json
 from contextlib import contextmanager
 import time
 import concurrent.futures
 
+from config import get_gemini_config
 # モデルのインポート
 from models.scout_models import (
     AiResult,
@@ -38,15 +38,14 @@ __all__ = [
     "ScreeningResult",
 ]
 
-api_key = st.secrets["gemini"]["api_key"]
-model = "gemini-3-pro-preview"
+_gemini_config = get_gemini_config()
+api_key = _gemini_config["api_key"]
+model = _gemini_config["model"]
+max_retries = _gemini_config["max_retries"]
+backoff_seconds = _gemini_config["backoff_seconds"]
 
 client = genai.Client(api_key=api_key)
 n_trials = 3
-# リトライ回数上限
-max_retries = 3
-# リトライ時のAPI問い合わせ間隔
-backoff_seconds = 1.5
 
 
 def _execute_with_retry(api_call):

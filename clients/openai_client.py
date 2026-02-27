@@ -1,10 +1,13 @@
 from openai import OpenAI
-import streamlit as st
+
+from config import get_openai_config
+
 
 class OpenAIClient:
 
   def __init__(self) -> None:
-    self.api_key = st.secrets["open_ai"]["api_key"]
+    openai_config = get_openai_config()
+    self.api_key = openai_config["api_key"]
     self.client = OpenAI(api_key=self.api_key)
     self.transcribe_model = "gpt-4o-transcribe"
     self.model = "gpt-4.1-2025-04-14"

@@ -2,21 +2,17 @@ import streamlit as st
 st.set_page_config(page_title="Scout Automation")
 
 import streamlit_authenticator as stauth
-import yaml
+from config import get_auth_config
 from services.scout import main as scout
 from services.jd import main as jd
 from services.screening import main as screening
-# secrets.toml から取得
-config = {
-    "credentials": yaml.safe_load(st.secrets["auth"]["credentials"])["credentials"],
-    "cookie": yaml.safe_load(st.secrets["auth"]["cookie"])["cookie"],
-}
 
+auth_config = get_auth_config()
 authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
+    auth_config["credentials"],
+    auth_config["cookie"]["name"],
+    auth_config["cookie"]["key"],
+    auth_config["cookie"]["expiry_days"],
 )
 
 # ----------------------------
