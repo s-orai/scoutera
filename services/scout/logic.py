@@ -43,15 +43,8 @@ def create_prompt(pdfs_A, pdfs_B, pdfs_C, comment_B, comment_C, job_pdf):
 
   data_dicts = [json.model_dump()]
   df = pd.DataFrame(data_dicts)
-  df.columns = [
-    "A評価の候補者が持っている共通のスキル",
-    "A,B評価の候補者とC評価の候補者のスキルの差分",
-    "A評価の候補者とB評価の候補者のスキルの差分",
-    "必須要件（箇条書きで出力）",
-    "歓迎要件（箇条書きで出力）"
-  ]
 
-  return export_to_spredsheet(df, create_prompt_folder_id)
+  return df.iloc[0]
 
 def create_scout_material(job_pdf):
   for _, original_name in job_pdf:

@@ -1,6 +1,6 @@
 import streamlit as st
 from services.scout import logic
-from utils import upload_files, cleanup_temp_files
+from utils import inject_code_block_style, show_code_sections, upload_files, cleanup_temp_files
 
 def show_search_console():
   tab1, tab2, tab3 = st.tabs(["候補者ピックアップ", "プロンプト作成", "スカウト素材出力"])
@@ -60,6 +60,8 @@ def show_search_console():
 
     comment_C = st.text_area('C評価コメント', placeholder='C評価のコメントを入力してください')
 
+    inject_code_block_style()
+
     if st.button('プロンプト作成開始'):
       with st.spinner('処理中です.....'):
         # 入力チェック：どちらか欠けている場合は処理しない
@@ -77,8 +79,17 @@ def show_search_console():
         job_file_info = upload_files(job_pdf)
 
         try:
-          spreadsheet_url = logic.create_prompt(pdfs_A_info, pdfs_B_info, pdfs_C_info, comment_B, comment_C, job_file_info)
-          st.write(f"作成したシート：{spreadsheet_url}")
+          result = logic.create_prompt(pdfs_A_info, pdfs_B_info, pdfs_C_info, comment_B, comment_C, job_file_info)
+          show_code_sections(
+            {
+              "A評価の候補者が持っている共通のスキル": result["common_skill_of_A"],
+              "A,B評価の候補者とC評価の候補者のスキルの差分": result["difference_of_ab_and_c"],
+              "A評価の候補者とB評価の候補者のスキルの差分": result["difference_of_a_and_b"],
+              "必須要件": result["required_condition"],
+              "歓迎要件": result["welcome_condition"],
+            },
+            main_title="プロンプト作成結果",
+          )
         finally:
           cleanup_temp_files(pdfs_A_info)
           cleanup_temp_files(pdfs_B_info)
